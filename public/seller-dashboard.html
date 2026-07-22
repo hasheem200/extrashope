@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Seller Dashboard</title>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+🏪 Dashboard
+</div>
+
+<nav>
+
+
+
+<button onclick="logout()" class="logout-btn">
+🚪 Logout
+</button>
+
+</nav>
+
+</header>
+<div id="sidebar"></div>
+<div class="main-content">
+<div class="dashboard-layout">
+
+
+<!-- MAIN -->
+
+<div class="seller-stats">
+<button onclick="viewStore()">
+🌍 View Store
+</button>
+
+
+  <h2 id="sellerName">
+    Welcome back
+  </h2>
+
+  <p style="color:rgb(7, 107, 60)">
+    🟢 Active Seller
+  </p>
+
+  <div class="stats-row">
+
+  <div class="stat-card">
+    <h2 id="wallet">$0.00</h2>
+    <p>Selling Wallet</p>
+  </div>
+
+  <div class="stat-card">
+    <h2 id="totalWithdraw">
+$0.00
+</h2>
+
+<p>
+Total Withdraw
+</p>
+  </div>
+
+  <div class="stat-card">
+    <h2 id="totalSales">0</h2>
+    <p>Total Sales</p>
+  </div>
+
+  <div class="stat-card">
+    <h2 id="activeProducts">0</h2>
+    <p>Active Products</p>
+  </div>
+
+</div>
+
+
+
+
+</div>
+</div>
+
+
+<script>
+function viewStore(){
+
+const user =
+JSON.parse(
+localStorage.getItem("user")
+);
+
+window.open(
+"/store.html?seller=" +
+user.nickname,
+"_blank"
+);
+
+}
+
+/* logout */
+function logout(){
+
+localStorage.removeItem("token");
+
+localStorage.removeItem("user");
+
+localStorage.removeItem("loggedIn");
+
+window.location.href="login.html";
+
+}
+
+async function loadTotalWithdraw(){
+
+    const user =
+    JSON.parse(localStorage.getItem("user"));
+
+    const res =
+    await fetch("/api/withdraws/" + user.nickname);
+
+    const withdraws =
+    await res.json();
+
+    let total = 0;
+
+    withdraws.forEach(w => {
+
+        if(w.status === "Completed ✅"){
+
+            total += Number(w.amount);
+
+        }
+
+    });
+
+    document.getElementById("totalWithdraw").innerText =
+        "$" + total.toFixed(2);
+
+}
+
+async function loadSellerDashboard(){
+
+  const user =
+  JSON.parse(
+    localStorage.getItem("user")
+  );
+
+  if(!user) return;
+
+  const usersRes =
+  await fetch("/api/users");
+
+  const users =
+  await usersRes.json();
+
+  const seller =
+  users.find(
+    u => u.nickname === user.nickname
+  );
+
+  if(!seller) return;
+
+  document.getElementById(
+    "sellerName"
+  ).innerText =
+  "Welcome back, " +
+  seller.nickname + "!";
+
+  document.getElementById(
+    "wallet"
+  ).innerText =
+  "$" +
+  Number(
+    seller.wallet || 0
+  ).toFixed(2);
+
+  document.getElementById(
+    "totalSales"
+  ).innerText =
+  seller.totalSales || 0;
+
+  const productsRes =
+  await fetch("/api/products");
+
+  const products =
+  await productsRes.json();
+
+  const myProducts =
+  products.filter(
+    p => p.seller === seller.nickname
+  );
+
+ document.getElementById(
+  "activeProducts"
+).innerText =
+myProducts.length;
+
+  const ordersRes =
+  await fetch("/api/orders");
+
+  const orders =
+  await ordersRes.json();
+
+  const myOrders =
+  orders.filter(order =>
+
+    order.products.some(
+      p => p.seller === seller.nickname
+    )
+
+  );
+
+  const recent =
+  myOrders.slice(-5).reverse();
+
+  let html = "";
+
+  recent.forEach(order => {
+
+    html += `
+      <div class="admin-product">
+        <b>${order.customer}</b>
+        <br>
+        ${order.status}
+        <br>
+        $${order.total}
+      </div>
+    `;
+
+  });
+
+  document.getElementById(
+    "recentOrders"
+  ).innerHTML =
+  html || "No orders found";
+
+}
+
+fetch("seller-sidebar.html")
+.then(res => res.text())
+.then(data => {
+document.getElementById("sidebar").innerHTML = data;
+});
+
+
+loadSellerDashboard();
+loadTotalWithdraw();
+
+</script>
+<script src="js/auth.js"></script>
+
+<script>
+requireRole("seller");
+</script>
+
+</body>
+
+</html>

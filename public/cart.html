@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>My Cart</title>
+
+<link rel="stylesheet"
+href="style.css">
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+🛒 My Cart
+</div>
+
+<nav>
+
+<a href="/">
+Home
+</a>
+
+</nav>
+
+</header>
+
+<div class="cart-container">
+
+<h1>
+Shopping Cart
+</h1>
+
+<div id="cartItems"></div>
+
+<h2 id="totalPrice">
+Total: $0
+</h2>
+
+<input
+type="text"
+id="couponInput"
+placeholder="Coupon Code">
+
+<button onclick="applyCoupon()">
+Apply Coupon
+</button>
+
+<button onclick="checkout()">
+Checkout
+</button>
+
+</div>
+
+<script>
+
+let cart =
+JSON.parse(
+localStorage.getItem("cart")
+) || [];
+
+let discount = 0;
+
+/* COUPON */
+
+function applyCoupon(){
+
+const code =
+document.getElementById(
+"couponInput"
+).value;
+
+if(code === "SAVE20"){
+
+discount = 20;
+
+alert(
+"20% Discount Applied ✅"
+);
+
+renderCart();
+
+}else{
+
+alert(
+"Invalid Coupon ❌"
+);
+
+}
+
+}
+
+/* RENDER CART */
+
+function renderCart(){
+
+const cartItems =
+document.getElementById(
+"cartItems"
+);
+
+cartItems.innerHTML = "";
+
+let total = 0;
+
+cart.forEach((item,index)=>{
+
+total += Number(item.price);
+
+cartItems.innerHTML += `
+
+<div class="cart-card">
+
+<img src="${item.image}" width="100">
+
+<div>
+
+<h3>${item.name}</h3>
+
+<p>$${item.price}</p>
+
+<button onclick="removeItem(${index})">
+
+Remove
+
+</button>
+
+</div>
+
+</div>
+
+`;
+
+});
+
+/* DISCOUNT */
+
+if(discount > 0){
+
+total =
+total - (total * discount / 100);
+
+}
+
+/* TOTAL */
+
+document.getElementById(
+"totalPrice"
+).innerText =
+
+"Total: $" + total;
+
+}
+
+/* REMOVE */
+
+function removeItem(index){
+
+cart.splice(index,1);
+
+localStorage.setItem(
+
+"cart",
+
+JSON.stringify(cart)
+
+);
+
+renderCart();
+
+}
+
+/* CHECKOUT */
+
+function checkout(){
+
+if(cart.length === 0){
+
+alert("Cart Empty");
+return;
+
+}
+
+window.location.href =
+"checkout.html";
+
+}
+
+
+renderCart();
+
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Seller Products</title>
+
+<link rel="stylesheet"
+href="style.css">
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+🏪 Products
+</div>
+
+<nav>
+
+<a href="/">🌍 View Store</a>
+<a href="/">📲 Telegram Notifications</a>
+<a href="/">⚙ Shop Settings</a>
+<a href="/">✔ Verification</a>
+<a href="/">📢 Promotions</a>
+<a href="/">⭐ Reviews</a>
+<a href="/">💬 Order Chats</a>
+<a href="seller-products.html">My Orders</a>
+<a href="seller-dashboard.html">Dashboard</a>
+
+</nav>
+
+</header>
+  
+
+<div class="container">
+    
+<h1>My Products</h1>
+
+<div id="productsContainer"></div>
+
+</div>
+
+
+<script>
+
+async function loadProducts(){
+
+const res =
+await fetch("/api/products");
+
+const products =
+await res.json();
+
+const user =
+JSON.parse(localStorage.getItem("user"));
+
+const container =
+document.getElementById("productsContainer");
+
+container.innerHTML = "";
+
+const sellerProducts =
+products.filter(product =>
+
+product.seller === user.nickname
+
+);
+
+sellerProducts.forEach(product=>{
+
+container.innerHTML += `
+
+<div class="admin-product">
+
+<img src="${product.image}" width="120">
+
+<div>
+
+<h2>${product.name}</h2>
+
+<p>$${product.price}</p>
+
+<p>${product.category}</p>
+
+<button onclick="editProduct('${product._id}')">
+Edit
+</button>
+
+<button onclick="deleteProduct('${product._id}')">
+Delete
+</button>
+
+</div>
+
+</div>
+
+`;
+
+});
+
+}
+
+async function deleteProduct(id){
+
+await fetch(
+
+"/api/products/" + id,
+
+{
+
+method:"DELETE"
+
+}
+
+);
+
+alert("Product Deleted ❌");
+
+loadProducts();
+
+}
+
+function editProduct(id){
+
+window.location.href =
+
+"edit-product.html?id=" + id;
+
+}
+
+loadProducts();
+
+</script>
+<script src="js/auth.js"></script>
+
+<script>
+requireRole("seller");
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Admin Panel</title>
+
+<link rel="stylesheet"
+href="style.css">
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+🛡 Pending Withdraws
+</div>
+
+<nav>
+<a href="/">Home</a>
+<a href="admin-Products-Manager.html">Products Manager</a>
+<a href="add-product.html">Add Product</a>
+<a href="admin-orders.html">Pending Orders</a>
+<a href="admin-payment.html">payment</a>
+<a href="admin.html">Admin Panel</a>
+</nav>
+
+</header>
+
+<div class="dashboard-layout">
+
+
+
+<!-- MAIN -->
+
+<div class="dashboard-main">
+
+<h1>
+Welcome Admin 👑
+</h1>
+
+<!-- STATS -->
+
+
+
+
+<div id="withdraws"></div>
+
+<script>
+
+async function loadWithdraws(){
+
+  const res = await fetch("/api/withdraws/admin/all");
+  const data = await res.json();
+
+  const container = document.getElementById("withdraws");
+  container.innerHTML = "";
+
+  const pending = data.filter(
+  w => w.status === "Pending ⏳"
+);
+
+pending.forEach(w => {
+
+  container.innerHTML += `
+    <div class="card">
+      <h3>${w.seller}</h3>
+      <p>$${w.amount}</p>
+      <p>${w.method}</p>
+      <p>Status: ${w.status}</p>
+
+      ${w.method === "Crypto" && w.binanceAccount
+ ? `
+   <p>
+     Binance: ${w.binanceAccount}
+     <button onclick="copyBinance('${w.binanceAccount}')">
+       📋 Copy
+     </button>
+   </p>
+ `
+ : ""
+}
+
+      <button onclick="complete('${w._id}', this)">
+        Completed ✅
+      </button>
+
+      <button onclick="reject('${w._id}', this)">
+        Reject ❌
+      </button>
+
+    </div>
+  `;
+
+});
+
+}
+
+
+/* COMPLETE */
+async function complete(id, btn){
+
+  await fetch("/api/withdraws/" + id + "/complete", {
+    method: "PUT"
+  });
+
+  alert("Withdraw Completed ✅");
+
+  // 🔥 اختفاء مباشر مثل الطلبات
+  btn.closest(".card").remove();
+}
+
+async function reject(id, btn){
+
+  await fetch("/api/withdraws/" + id + "/reject", {
+    method: "PUT"
+  });
+
+  alert("Withdraw Rejected ❌");
+
+  // 🔥 اختفاء مباشر
+  btn.closest(".card").remove();
+}
+
+
+/* REJECT */
+async function reject(id){
+
+  await fetch("/api/withdraws/" + id + "/reject", {
+    method: "PUT"
+  });
+
+const res = await fetch("/api/withdraws/admin/all");
+const data = await res.json();
+
+console.log(data);
+
+  loadWithdraws();
+
+}
+
+function copyBinance(text){
+  navigator.clipboard.writeText(text)
+    .then(() => {
+      alert("Copied ✅");
+    })
+    .catch(() => {
+      alert("Copy failed ❌");
+    });
+}
+
+/* INIT */
+loadWithdraws();
+
+
+</script>
+<script src="js/auth.js"></script>
+
+<script>
+requireRole("admin");
+</script>
+</body>
+
+</html>

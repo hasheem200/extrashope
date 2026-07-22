@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Advertisement Payment</title>
+
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+📢 Advertisement Payment
+</div>
+
+<nav>
+<a href="/">Home</a>
+<a href="advertise.html">Back</a>
+</nav>
+
+</header>
+
+<div class="auth-container">
+
+<h1>Payment Details</h1>
+
+<h3>Total Amount:</h3>
+
+<p id="totalPrice"></p>
+
+<hr>
+<!-- CRYPTO PAYMENT -->
+
+<div class="crypto-box">
+
+<h2 id="paymentTitle"></h2>
+
+<p id="paymentDescription"></p>
+
+<input
+id="walletAddress"
+readonly>
+
+<p id="paymentNetwork"></p>
+
+
+
+<button onclick="copyWallet()">
+Copy
+</button>
+
+</div>
+
+<!-- END CRYPTO PAYMENT -->
+
+<hr>
+
+<p>
+After payment upload proof screenshot.
+</p>
+
+<input
+type="file"
+id="paymentProof">
+
+<h3>Banner Image</h3>
+
+<input
+type="file"
+id="bannerImage">
+
+<br><br>
+
+<button onclick="submitOrder()">
+Submit Payment
+</button>
+
+</div>
+
+<script>
+
+async function loadPaymentSettings(){
+
+    const res =
+    await fetch("/api/payment-settings");
+
+    const data =
+    await res.json();
+
+    document.getElementById("paymentTitle").innerHTML =
+        "💳 " + data.name;
+
+    document.getElementById("paymentDescription").innerText =
+        data.description;
+
+    document.getElementById("walletAddress").value =
+        data.account;
+
+    document.getElementById("paymentNetwork").innerText =
+        data.network;
+
+    document.getElementById("copyBtn").innerText =
+        data.buttonText;
+
+}
+
+loadPaymentSettings();
+    
+
+/* COPY WALLET */
+
+function copyWallet(){
+
+const wallet =
+document.getElementById("walletAddress").value;
+
+navigator.clipboard.writeText(wallet);
+
+alert("Wallet copied ✔");
+
+}
+
+/* GET CART */
+
+const ad =
+JSON.parse(
+localStorage.getItem("adData")
+);
+
+if(!ad){
+
+    alert("No Advertisement Found");
+
+    location.href="advertise.html";
+
+}
+
+document.getElementById("totalPrice").innerText =
+"$" + Number(ad.price).toFixed(2);
+
+async function submitOrder(){
+
+const proofFile =
+document.getElementById(
+"paymentProof"
+).files[0];
+
+const bannerFile =
+document.getElementById("bannerImage").files[0];
+
+if(!bannerFile){
+
+    alert("Upload Banner Image");
+
+    return;
+
+}
+
+if(!proofFile){
+
+alert(
+"Upload Payment Proof First"
+);
+
+return;
+
+}
+
+/* UPLOAD IMAGE */
+
+const formData =
+new FormData();
+
+formData.append(
+"image",
+proofFile
+);
+
+const uploadRes =
+await fetch(
+"/api/upload",
+{
+method:"POST",
+body:formData
+}
+);
+
+const uploadData =
+await uploadRes.json();
+
+const bannerForm =
+new FormData();
+
+bannerForm.append(
+
+    "image",
+
+    bannerFile
+
+);
+
+const bannerUpload =
+await fetch(
+
+    "/api/upload",
+
+    {
+
+        method:"POST",
+
+        body:bannerForm
+
+    }
+
+);
+
+const bannerData =
+await bannerUpload.json();
+
+/* CART */
+
+
+
+/* USER */
+
+const user =
+JSON.parse(
+localStorage.getItem("user")
+) || {};
+
+/* TOTAL */
+
+
+
+/* ORDER */
+
+const advertisement = {
+
+    advertiser: ad.advertiser,
+
+    bannerType: ad.bannerType,
+
+    website: ad.website,
+
+    bannerImage: bannerData.image,
+
+    days: ad.days,
+
+    price: ad.price,
+
+    paymentProof: uploadData.image,
+
+    status:"Pending"
+
+};
+
+/* SAVE ORDER */
+
+const res =
+await fetch(
+"/api/ads",
+{
+method:"POST",
+headers:{
+"Content-Type":
+"application/json"
+},
+body:JSON.stringify(advertisement)
+}
+);
+
+const data =
+await res.json();
+
+alert("Advertisement Submitted Successfully ✅");
+
+localStorage.removeItem("adData");
+
+
+
+window.location.href="/";
+
+}
+
+</script>
+<script src="js/auth.js"></script>
+
+
+</body>
+</html>

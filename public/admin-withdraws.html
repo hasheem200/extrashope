@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Admin Withdraw</title>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+💸 Admin Withdraw
+</div>
+
+<nav>
+
+<a href="admin.html">
+⬅ Dashboard
+</a>
+
+</nav>
+
+</header>
+
+<div class="container">
+
+<div class="card">
+
+<h2>
+💰 Admin Wallet
+</h2>
+
+<h1 id="wallet">
+$0.00
+</h1>
+
+</div>
+
+<div class="card">
+
+<h2>
+📢 Ads Revenue
+</h2>
+
+<h1 id="adsWallet">
+$0.00
+</h1>
+
+</div>
+
+<br>
+
+<div class="card">
+
+<h2>
+Create Withdraw
+</h2>
+
+<label>Withdraw From</label>
+
+<select id="withdrawSource">
+
+    <option value="wallet">
+        💰 Earnings
+    </option>
+
+    <option value="ads">
+        📢 Ads Revenue
+    </option>
+
+</select>
+
+<br><br> 
+
+<input
+type="number"
+id="amount"
+placeholder="Amount">
+
+<br><br>
+
+<select id="method">
+
+<option>Binance</option>
+<option>PayPal</option>
+<option>Bank</option>
+
+</select>
+
+<br><br>
+
+<input
+type="text"
+id="address"
+placeholder="Wallet Address">
+
+<br><br>
+
+<button onclick="withdraw()">
+
+Withdraw
+
+</button>
+
+</div>
+
+<br>
+
+<h2>
+Withdraw History
+</h2>
+
+<div id="history"></div>
+
+</div>
+
+<script>
+
+async function loadWallet(){
+
+    const res =
+    await fetch("/api/settings/admin-wallet");
+
+    const data =
+    await res.json();
+
+    document.getElementById("wallet").innerText =
+        "$" + Number(data.wallet).toFixed(2);
+
+    document.getElementById("adsWallet").innerText =
+        "$" + Number(data.adsRevenue).toFixed(2);
+
+}
+
+async function loadHistory(){
+
+const res =
+await fetch("/api/admin-withdraws");
+
+const list =
+await res.json();
+
+const container =
+document.getElementById("history");
+
+container.innerHTML = "";
+
+list.forEach(item=>{
+
+container.innerHTML += `
+
+<div class="admin-product">
+
+<div>
+
+<h2>
+$${item.amount}
+</h2>
+
+<p>
+${item.method}
+</p>
+
+<p>
+${item.address}
+</p>
+
+<p>
+
+${item.source === "ads"
+
+? "📢 Ads Revenue"
+
+: "💰 Admin Wallet"}
+
+</p>
+
+<p>
+${new Date(item.createdAt).toLocaleString()}
+</p>
+
+</div>
+
+${
+item.status === "Pending ⏳"
+?
+
+`
+
+<div>
+
+<button onclick="approve('${item._id}')">
+
+Approve
+
+</button>
+
+<br><br>
+
+<button onclick="reject('${item._id}')">
+
+Reject
+
+</button>
+
+</div>
+
+`
+
+:
+
+""
+
+}
+
+</div>
+
+`;
+
+});
+
+}
+
+async function withdraw(){
+
+const amount =
+Number(document.getElementById("amount").value);
+
+const source =
+document.getElementById("withdrawSource").value;
+
+const method =
+document.getElementById("method").value;
+
+const address =
+document.getElementById("address").value;
+
+const res =
+await fetch("/api/admin-withdraws",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+amount,
+method,
+address,
+source
+
+})
+
+
+
+});
+
+
+const data =
+await res.json();
+
+alert(data.message);
+
+loadWallet();
+
+loadHistory();
+
+}
+
+async function approve(id){
+
+    const res =
+    await fetch(
+
+        "/api/admin-withdraws/" + id + "/approve",
+
+        {
+            method:"PUT"
+        }
+
+    );
+
+    const data =
+    await res.json();
+
+    alert(data.message);
+
+    loadWallet();
+
+    loadHistory();
+
+}
+
+async function reject(id){
+
+    const res =
+    await fetch(
+
+        "/api/admin-withdraws/" + id + "/reject",
+
+        {
+            method:"PUT"
+        }
+
+    );
+
+    const data =
+    await res.json();
+
+    alert(data.message);
+
+    loadWallet();
+
+    loadHistory();
+
+}
+
+loadWallet();
+
+loadHistory();
+
+</script>
+
+</body>
+
+</html>

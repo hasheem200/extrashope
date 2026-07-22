@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Manage Users</title>
+
+<link rel="stylesheet" href="style.css">
+
+<style>
+
+body{
+font-family:Arial;
+background:#111;
+color:white;
+padding:20px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
+}
+
+th,td{
+border:1px solid #333;
+padding:10px;
+text-align:center;
+}
+
+th{
+background:#222;
+}
+
+button{
+padding:6px 10px;
+margin:2px;
+border:none;
+border-radius:5px;
+cursor:pointer;
+}
+
+.role{
+background:#00c853;
+color:white;
+}
+
+.block{
+background:#ff9800;
+color:white;
+}
+
+.delete{
+background:#e53935;
+color:white;
+}
+
+.back{
+display:inline-block;
+margin-bottom:20px;
+background:#2196f3;
+padding:10px 15px;
+border-radius:5px;
+color:white;
+text-decoration:none;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<a href="admin.html" class="back">
+⬅ Back To Admin
+</a>
+
+<h1>
+👥 Manage Users
+</h1>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Nickname</th>
+
+<th>Email</th>
+
+<th>Role</th>
+
+<th>Status</th>
+
+<th>Actions</th>
+
+</tr>
+
+</thead>
+
+<tbody id="usersTable">
+
+</tbody>
+
+</table>
+
+<script>
+
+async function loadUsers(){
+
+const res =
+await fetch("/api/users");
+
+const users =
+await res.json();
+
+const table =
+document.getElementById("usersTable");
+
+table.innerHTML = "";
+
+users.forEach(user=>{
+
+table.innerHTML += `
+
+<tr>
+
+<td>${user.nickname}</td>
+
+<td>
+
+<input
+type="email"
+id="email-${user._id}"
+value="${user.email}"
+style="width:220px;">
+
+</td>
+
+<td>${user.role}</td>
+
+<td>
+
+${user.blocked
+?
+"🚫 Blocked"
+:
+"✅ Active"
+}
+
+</td>
+
+<td>
+
+<button
+class="role"
+onclick="changeRole('${user._id}','buyer')">
+
+Buyer
+
+</button>
+
+<button
+class="role"
+onclick="changeRole('${user._id}','seller')">
+
+Seller
+
+</button>
+
+<button
+class="role"
+onclick="changeRole('${user._id}','admin')">
+
+Admin
+
+</button>
+
+<button
+class="block"
+onclick="toggleBlock('${user._id}')">
+
+${user.blocked
+?
+"Unblock"
+:
+"Block"
+}
+
+</button>
+
+<button
+class="delete"
+onclick="deleteUser('${user._id}')">
+
+Delete
+
+</button>
+
+</td>
+
+</tr>
+
+`;
+
+});
+
+}
+
+async function changeRole(id,role){
+
+await fetch(
+
+"/api/users/"+id+"/role",
+
+{
+
+method:"PUT",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+role
+
+})
+
+}
+
+);
+
+loadUsers();
+
+}
+
+async function toggleBlock(id){
+
+await fetch(
+
+"/api/users/"+id+"/block",
+
+{
+
+method:"PUT"
+
+}
+
+);
+
+loadUsers();
+
+}
+
+async function deleteUser(id){
+
+if(!confirm("Delete User?")) return;
+
+await fetch(
+
+"/api/users/"+id,
+
+{
+
+method:"DELETE"
+
+}
+
+);
+
+loadUsers();
+
+}
+
+loadUsers();
+
+</script>
+
+<script src="js/auth.js"></script>
+
+<script>
+requireRole("admin");
+</script>
+
+</body>
+
+</html>

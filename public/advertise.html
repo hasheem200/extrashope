@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Advertise</title>
+
+<link rel="stylesheet" href="style.css">
+<header>
+
+<div class="logo">
+📢 Advertise With Us
+</div>
+<nav>
+<a href="/">Back</a>
+
+</nav>
+
+</header>
+
+<style>
+
+body{
+
+background:#f5f5f5;
+
+font-family:Arial;
+
+}
+
+.container{
+
+width:1100px;
+max-width:95%;
+margin:40px auto;
+
+}
+
+.title{
+
+font-size:34px;
+font-weight:bold;
+text-align:center;
+margin-bottom:40px;
+
+}
+
+.banner-grid{
+
+display:grid;
+
+grid-template-columns:300px 1fr;
+
+gap:30px;
+
+}
+
+.left-banner{
+
+height:600px;
+
+background:#FFD54F;
+
+border-radius:10px;
+
+display:flex;
+
+justify-content:center;
+
+align-items:center;
+
+font-size:30px;
+
+cursor:pointer;
+
+transition:.3s;
+
+}
+
+.right{
+
+display:flex;
+
+flex-direction:column;
+
+gap:25px;
+
+}
+
+.top-banner{
+
+height:90px;
+
+background:#61DDAA;
+
+border-radius:10px;
+
+display:flex;
+
+justify-content:center;
+
+align-items:center;
+
+font-size:30px;
+
+cursor:pointer;
+
+transition:.3s;
+
+}
+
+.row{
+
+display:flex;
+
+gap:20px;
+
+}
+
+.big-banner{
+
+flex:1;
+
+height:280px;
+
+background:white;
+
+border-radius:10px;
+
+display:flex;
+
+justify-content:center;
+
+align-items:center;
+
+font-size:28px;
+
+cursor:pointer;
+
+transition:.3s;
+
+border:2px solid #ddd;
+
+}
+
+.mobile{
+
+width:320px;
+
+height:50px;
+
+margin:auto;
+
+background:#61DDAA;
+
+border-radius:8px;
+
+display:flex;
+
+justify-content:center;
+
+align-items:center;
+
+cursor:pointer;
+
+}
+
+.selected{
+
+border:4px solid orange;
+
+transform:scale(1.03);
+
+}
+
+.form{
+
+margin-top:50px;
+
+background:white;
+
+padding:30px;
+
+border-radius:12px;
+
+box-shadow:0 5px 15px rgba(0,0,0,.1);
+
+}
+
+.form input,
+
+.form select{
+
+width:100%;
+
+padding:15px;
+
+margin-top:15px;
+
+margin-bottom:20px;
+
+}
+
+.price{
+
+font-size:26px;
+
+color:orange;
+
+font-weight:bold;
+
+}
+
+button{
+
+width:100%;
+
+padding:16px;
+
+background:#ff9800;
+
+border:none;
+
+color:white;
+
+font-size:20px;
+
+border-radius:8px;
+
+cursor:pointer;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+
+<div class="banner-grid">
+
+<div
+
+class="left-banner"
+
+onclick="choose('long',bannerPrices.long,this)">
+
+
+300×600
+
+</div>
+
+<div class="right">
+
+<div
+
+class="top-banner"
+
+onclick="choose('top',bannerPrices.top,this)"
+
+>
+
+728×90
+
+</div>
+
+<div class="row">
+
+
+<div
+
+class="big-banner"
+
+onclick="choose('rectangle',bannerPrices.rectangle,this)"
+
+>
+
+300×250
+
+</div>
+
+</div>
+
+<div
+
+class="mobile"
+
+onclick="choose('mobile',bannerPrices.mobile,this)"
+
+>
+
+320×50
+
+</div>
+
+</div>
+
+</div>
+
+<div class="form">
+
+<h2>📢 Advertisement Details</h2>
+
+<label><b>🖼 Banner Image</b></label>
+
+<div style="
+padding:15px;
+margin-top:10px;
+margin-bottom:20px;
+background:#fff8e1;
+border:2px dashed #ff9800;
+border-radius:10px;
+color:#444;
+line-height:1.7;
+">
+
+📢 <b>Banner Image</b><br><br>
+
+Your advertisement banner will be uploaded
+after payment on the next page.
+
+Please complete your payment first,
+then upload your banner image together
+with your payment proof.
+
+</div>
+
+<label>
+
+🌐 Website URL
+
+<small style="color:#888;">(Optional)</small>
+
+</label>
+
+<input
+type="text"
+id="website"
+placeholder="https://example.com">
+
+<small style="
+display:block;
+margin-top:-10px;
+margin-bottom:20px;
+color:#777;
+">
+
+Leave empty if you don't want the banner
+to open a website.
+
+</small>
+
+<label>
+
+📅 Choose Advertisement Duration (Days)
+
+</label>
+
+<input
+type="number"
+id="days"
+value="1"
+min="1"
+oninput="updatePrice()">
+
+<div class="price">
+
+💰 Total Price
+
+<br><br>
+
+$
+
+<span id="price">0</span>
+
+</div>
+
+<button onclick="payNow()">
+
+🟠 Pay Now
+
+</button>
+
+</div>
+
+
+<script>
+let bannerPrices = {};
+
+let selectedType="";
+
+let pricePerDay=0;
+
+async function loadBannerPrices(){
+
+    const res = await fetch("/api/banner-prices");
+
+    bannerPrices = await res.json();
+
+    console.log(bannerPrices);
+
+}
+
+function choose(type,price,el){
+
+selectedType=type;
+
+pricePerDay=price;
+
+document
+
+.querySelectorAll(
+
+'.left-banner,.top-banner,.big-banner,.mobile'
+
+)
+
+.forEach(x=>x.classList.remove("selected"));
+
+el.classList.add("selected");
+
+updatePrice();
+
+}
+
+function updatePrice(){
+
+let days=
+
+Number(
+
+document.getElementById("days").value
+
+);
+
+document.getElementById("price").innerHTML=
+
+(days*pricePerDay).toFixed(2);
+
+}
+
+function payNow(){
+
+    if(selectedType==""){
+
+        alert("Choose Banner Position");
+        return;
+
+    }
+
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    if(!user){
+
+        alert("Please login first");
+        return;
+
+    }
+
+ const adData = {
+
+    advertiser:user.nickname,
+
+    bannerType:selectedType,
+
+    website:document.getElementById("website").value,
+
+    bannerImage:null,
+
+    days:Number(document.getElementById("days").value),
+
+    price:Number(document.getElementById("price").innerText)
+
+};
+
+    localStorage.setItem(
+
+        "adData",
+
+        JSON.stringify(adData)
+
+    );
+
+    location.href="checkout2.html";
+
+}
+
+window.onload = async () => {
+
+    await loadBannerPrices();
+
+};
+
+
+</script>
+
+</body>
+
+</html>

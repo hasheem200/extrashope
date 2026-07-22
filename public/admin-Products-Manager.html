@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Products Manager</title>
+
+<link rel="stylesheet"
+href="style.css">
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+🏪 Products
+</div>
+
+<nav>
+<a href="/">Home</a>
+<a href="admin-Products-Manager.html">Products Manager</a>
+<a href="add-product.html">Add Product</a>
+<a href="admin-orders.html">Pending Orders</a>
+<a href="admin-payment.html">payment</a>
+<a href="admin.html">Admin Panel</a>
+</nav>
+
+</header>
+
+<h1>📦 Products Manager</h1>
+
+<input
+type="text"
+id="searchProduct"
+placeholder="Search Product..."
+onkeyup="loadProducts()"
+style="
+width:100%;
+padding:10px;
+margin-bottom:20px;
+">
+
+<div id="productsList"></div>
+
+<script>
+
+async function loadProducts(){
+
+const res =
+await fetch("/api/products");
+
+const products =
+await res.json();
+
+const search =
+document.getElementById(
+"searchProduct"
+).value.toLowerCase();
+
+const list =
+document.getElementById(
+"productsList"
+);
+
+list.innerHTML = "";
+
+products
+
+.filter(product =>
+
+(product.name || "")
+.toLowerCase()
+.includes(search)
+
+)
+
+.forEach(product=>{
+
+list.innerHTML += `
+
+<div class="admin-product">
+
+<img
+src="${product.image}"
+width="120">
+
+<div>
+
+<h2>
+${product.name}
+</h2>
+
+<p>
+$${product.price}
+</p>
+
+<p>
+${product.type}
+</p>
+
+<a href="admin-edit-product.html?id=${product.id}">
+<button>
+Edit
+</button>
+</a>
+
+<button
+onclick="deleteProduct('${product._id}')">
+Delete
+</button>
+
+</div>
+
+</div>
+
+
+<br>
+
+`;
+
+});
+
+}
+
+async function deleteProduct(id){
+
+if(!confirm("Delete Product?"))
+return;
+
+await fetch(
+
+"/api/products/" + id,
+
+{
+method:"DELETE"
+}
+
+);
+
+loadProducts();
+
+}
+
+loadProducts();
+
+</script>
+<script src="js/auth.js"></script>
+
+<script>
+requireRole("admin");
+</script>
+</body>
+</html>

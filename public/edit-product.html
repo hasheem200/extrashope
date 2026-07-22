@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Edit Product</title>
+
+<link rel="stylesheet"
+href="style.css">
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+✏ Edit Product
+</div>
+
+<nav>
+
+<a href="seller-products.html">
+⬅ Back
+</a>
+
+</nav>
+
+</header>
+
+<div class="auth-container">
+
+<h1>
+Edit Product
+</h1>
+
+<input
+type="text"
+id="productName"
+placeholder="Product Name">
+
+<input
+type="number"
+id="productPrice"
+placeholder="Price">
+
+<input
+type="text"
+id="productCategory"
+placeholder="Category">
+
+<input
+type="text"
+id="productPlatform"
+placeholder="Platform">
+
+<input
+type="text"
+id="productLogin"
+placeholder="Login">
+
+<input
+type="text"
+id="productPassword"
+placeholder="Password">
+
+<input
+type="text"
+id="productDownload"
+placeholder="Download Link">
+
+<textarea
+id="productStockData"
+placeholder="Stock Data (one account per line)"
+rows="10">
+</textarea>
+
+<button onclick="updateProduct()">
+Update Product
+</button>
+
+</div>
+
+<script>
+
+
+
+const params =
+new URLSearchParams(
+window.location.search
+);
+
+const productId =
+params.get("id");
+
+async function loadProduct(){
+
+const res =
+await fetch("/api/products");
+
+const products =
+await res.json();
+
+const product =
+products.find(p =>
+
+p._id === productId
+
+
+
+);
+
+if(!product){
+
+alert("Product Not Found");
+
+return;
+
+}
+
+document.getElementById(
+"productName"
+).value = product.name;
+
+document.getElementById(
+"productPrice"
+).value = product.price;
+
+document.getElementById(
+"productCategory"
+).value = product.category;
+
+document.getElementById(
+"productPlatform"
+).value = product.platform;
+
+document.getElementById(
+"productLogin"
+).value = product.login;
+
+document.getElementById(
+"productPassword"
+).value = product.password;
+
+document.getElementById(
+"productDownload"
+).value = product.download;
+
+document.getElementById(
+"productStockData"
+).value = product.stockData || "";
+
+}
+
+async function updateProduct(){
+
+const updatedProduct = {
+
+name:
+document.getElementById("productName").value,
+
+price:
+document.getElementById("productPrice").value,
+
+category:
+document.getElementById("productCategory").value,
+
+platform:
+document.getElementById("productPlatform").value,
+
+login:
+document.getElementById("productLogin").value,
+
+password:
+document.getElementById("productPassword").value,
+
+download:
+document.getElementById("productDownload").value,
+
+stockData:
+document.getElementById("productStockData").value
+
+};
+
+const res = await fetch(
+
+"/api/products/" + productId,
+
+{
+
+method:"PUT",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify(updatedProduct)
+
+}
+
+);
+
+const data = await res.json();
+
+alert(data.message || "Product Updated ✅");
+
+window.location.href =
+"seller-products.html";
+
+}
+
+
+
+loadProduct();
+
+</script>
+
+</body>
+
+</html>

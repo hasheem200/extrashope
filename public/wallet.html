@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Wallet</title>
+
+<link rel="stylesheet"
+href="style.css">
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+💰 Seller Wallet
+</div>
+
+<nav>
+
+
+<a href="/">
+🌍 View Store
+</a>
+
+<a href="notifications.html">
+  🔔 Notifications
+</a>
+
+<a href="/">
+⚙ Shop Settings
+</a>
+
+<a href="/">
+✔ Verification
+</a>
+
+<a href="/">
+📢 Promotions
+</a>
+
+<a href="/">
+⭐ Reviews
+</a>
+
+<a href="/">
+💬 Order Chats
+</a>
+
+<a href="seller-products.html">
+My Orders
+</a>
+
+<a href="seller-dashboard.html">
+Dashboard
+</a>
+
+</nav>
+
+</header>
+
+<div class="dashboard-layout">  
+
+<h1>My Wallet</h1>
+
+<div class="container">
+
+<div class="container">
+
+    <div class="stats">
+
+        <div class="stat-box">
+            <h2 id="walletBalance">$0</h2>
+            <p>Available Balance</p>
+        </div>
+
+        <div class="stat-box">
+            <h2 id="totalSales">0</h2>
+            <p>Total Sales</p>
+        </div>
+
+        <div class="stat-box">
+            <h2 id="totalProducts">0</h2>
+            <p>My Products</p>
+        </div>
+
+        <div class="stat-box">
+            <h2 id="totalOrders">0</h2>
+            <p>Total Orders</p>
+        </div>
+
+    </div>
+
+    <div class="wallet-content">
+
+        <h2>Recent Earnings</h2>
+
+        <div id="earningsContainer"></div>
+
+        <button onclick="withdrawFunds()">
+            Withdraw Funds
+        </button>
+
+    </div>
+
+</div>
+
+
+
+   
+
+
+
+</div>
+
+
+<a href="notifications.html">
+🔔 <span id="notifCount">0</span>
+</a>
+
+<script>
+
+async function loadWallet(){
+
+const user =
+JSON.parse(localStorage.getItem("user"));
+
+if(!user){
+
+window.location.href =
+"login.html";
+
+return;
+
+}
+
+
+
+const res =
+await fetch(
+"/api/users/wallet/" +
+user.nickname
+);
+
+
+const data =
+await res.json();
+
+const seller = data;
+
+document.getElementById("walletBalance").innerText =
+"$" + Number(seller.wallet || 0).toFixed(2);
+
+document.getElementById("totalSales").innerText =
+seller.totalSales || 0;
+
+/* Orders */
+
+const ordersRes =
+await fetch("/api/orders");
+
+const orders =
+await ordersRes.json();
+
+const myOrders =
+orders.filter(order =>
+
+order.products &&
+order.products.some(product =>
+product.seller === seller.nickname
+)
+
+);
+
+document.getElementById("totalOrders").innerText =
+myOrders.length;
+
+/* Products */
+
+const productsRes =
+await fetch("/api/products");
+
+const products =
+await productsRes.json();
+
+const myProducts =
+products.filter(product =>
+
+product.seller === seller.nickname
+
+);
+
+/* أحدث المنتجات أولاً */
+
+myProducts.sort(
+(a,b)=>
+new Date(b.createdAt || 0) -
+new Date(a.createdAt || 0)
+);
+
+document.getElementById("totalProducts").innerText =
+myProducts.length;
+
+document.getElementById("earningsContainer").innerHTML = `
+
+<div class="admin-product">
+
+<div>
+
+<h2>${seller.nickname}</h2>
+
+
+<p>Wallet: $${seller.wallet.toFixed(2)}</p>
+
+<p>Total Sales: ${seller.totalSales || 0}</p>
+
+</div>
+
+</div>
+
+`;
+
+}
+
+
+function withdrawFunds(){
+
+alert(
+"Withdrawal Request Sent 💸"
+);
+
+}
+
+
+
+async function loadNotifCount(){
+
+  const user =
+  JSON.parse(
+    localStorage.getItem("user")
+  );
+
+  if(!user) return;
+
+  const res =
+  await fetch(
+    "/api/notifications/" +
+    user.nickname
+  );
+
+  const data =
+  await res.json();
+
+  document.getElementById(
+    "notifCount"
+  ).innerText =
+  data.length;
+
+}
+
+loadNotifCount();
+
+
+
+
+loadWallet();
+
+</script>
+<script src="js/auth.js"></script>
+
+<script>
+requireRole("seller");
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>My Orders</title>
+
+<link rel="stylesheet"
+href="style.css">
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+📦 My Orders
+</div>
+
+<nav>
+
+<a href="/">
+Home
+</a>
+
+<a href="downloads.html">
+Downloads
+</a>
+
+</nav>
+
+</header>
+
+
+<div class="container">
+
+
+<h1>My Orders</h1>
+
+<div id="ordersContainer"></div>
+
+</div>
+
+<script>
+
+async function loadOrders(){
+
+
+const user =
+JSON.parse(
+localStorage.getItem("user")
+);
+
+if(!user){
+
+window.location.href =
+"login.html";
+
+return;
+
+}
+
+const res =
+await fetch("/api/orders");
+
+const orders =
+await res.json();
+
+console.log(orders);
+console.log(user);
+
+
+const myOrders =
+orders.filter(order =>
+
+order.userId == user.id ||
+
+order.customer == user.nickname
+
+);
+
+
+console.log("USER:", user);
+console.log("MY ORDERS:", myOrders);
+
+
+
+const container =
+document.getElementById(
+"ordersContainer"
+);
+
+container.innerHTML = "";
+
+myOrders.forEach(order=>{
+
+order.products.forEach(product=>{
+
+let statusColor = "#999";
+
+if(order.status === "Approved")
+statusColor = "green";
+
+if(order.status === "Rejected")
+statusColor = "red";
+
+if(order.status === "Pending")
+statusColor = "orange";
+
+container.innerHTML += `
+
+<div class="admin-product">
+
+<img
+src="${product.image}"
+width="120">
+
+<div>
+
+<h2>
+${product.name}
+</h2>
+
+<p style="
+color:${statusColor};
+font-weight:bold;
+">
+
+${order.status}
+
+</p>
+
+<p>
+${new Date(
+order.createdAt
+).toLocaleString()}
+</p>
+
+<a
+href="product.html?id=${product.id}"
+>
+
+View Product
+
+</a>
+
+</div>
+
+</div>
+
+<br>
+
+`;
+
+});
+
+});
+
+}
+
+loadOrders();
+
+</script>
+<script src="js/auth.js"></script>
+
+<script>
+requireRole("buyer");
+</script>
+</body>
+
+</html>

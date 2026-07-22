@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Profile</title>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+👤 Seller Profile
+</div>
+
+<nav>
+
+<a href="/">Home</a>
+
+<a href="notifications.html">
+  🔔 Notifications
+</a>
+
+<a href="seller-dashboard.html">
+Dashboard
+</a>
+
+</nav>
+
+</header>
+
+<div class="profile-page">
+
+<img class="profile-avatar"
+src="https://cdn-icons-png.flaticon.com/512/149/149071.png">
+
+<h1 id="profileName">
+Seller
+</h1>
+
+<p id="profileBio">
+No bio yet
+</p>
+
+<div class="socials">
+
+<p id="profileInstagram"></p>
+
+<p id="profileTelegram"></p>
+
+<p id="profileDiscord"></p>
+
+</div>
+
+<div class="profile-stats">
+
+<div class="profile-box">
+
+<h2 id="profileFollowers">
+0
+</h2>
+
+<p>Followers</p>
+
+</div>
+
+<div class="profile-box">
+
+<h2 id="profileProducts">
+0
+</h2>
+
+<p>Products</p>
+
+</div>
+
+<div class="profile-box">
+
+<h2 id="profileRating">
+5.0
+</h2>
+
+<p>Rating</p>
+
+</div>
+
+</div>
+
+</div>
+
+<a href="notifications.html">
+🔔 <span id="notifCount">0</span>
+</a>
+
+<script>
+
+const user =
+JSON.parse(localStorage.getItem("user"));
+
+const followers =
+localStorage.getItem("followers") || 0;
+
+const products =
+JSON.parse(localStorage.getItem("sellerProducts")) || [];
+
+document.getElementById("profileName")
+.innerText =
+user.nickname;
+
+document.getElementById("profileBio")
+.innerText =
+user.bio || "Professional Digital Seller 🔥";
+
+document.getElementById("profileInstagram")
+.innerHTML =
+"📸 Instagram: " +
+(user.instagram || "Not Added");
+
+document.getElementById("profileTelegram")
+.innerHTML =
+"📨 Telegram: " +
+(user.telegram || "Not Added");
+
+document.getElementById("profileDiscord")
+.innerHTML =
+"🎮 Discord: " +
+(user.discord || "Not Added");
+
+document.getElementById("profileFollowers")
+.innerText =
+followers;
+
+document.getElementById("profileProducts")
+.innerText =
+products.length;
+
+document.getElementById("profileRating")
+.innerText =
+"5.0";
+
+
+
+
+async function loadNotifCount(){
+
+  const user =
+  JSON.parse(
+    localStorage.getItem("user")
+  );
+
+  if(!user) return;
+
+  const res =
+  await fetch(
+    "/api/notifications/" +
+    user.nickname
+  );
+
+  const data =
+  await res.json();
+
+  document.getElementById(
+    "notifCount"
+  ).innerText =
+  data.length;
+
+}
+
+loadNotifCount();
+
+
+</script>
+
+</body>
+
+</html>

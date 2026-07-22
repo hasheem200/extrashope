@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Seller Products</title>
+
+<link rel="stylesheet"
+href="style2.css">
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+⚙️ Shop Settings
+</div>
+
+<nav>
+
+<a href="/">🌍 View Store</a>
+<a href="/">📲 Telegram Notifications</a>
+<a href="/">⚙ Shop Settings</a>
+<a href="/">✔ Verification</a>
+<a href="/">📢 Promotions</a>
+<a href="/">⭐ Reviews</a>
+<a href="/">💬 Order Chats</a>
+<a href="seller-products.html">My Orders</a>
+<a href="seller-dashboard.html">Dashboard</a>
+
+</nav>
+
+</header>
+
+
+
+
+<div class="admin-product">
+
+<h2>⚙️ Shop Settings</h2>
+
+<div class="settings-row">
+
+<div class="form-box">
+<label>Shop Name *</label>
+<input
+type="text"
+id="storeName"
+placeholder="Top Movies">
+</div>
+
+<div class="form-box">
+<label>Shop Description</label>
+<textarea
+id="storeDescription"
+rows="4"
+placeholder="Describe your store..."></textarea>
+</div>
+
+</div>
+
+<div>
+<label>Shop URL</label>
+<input id="shopUrl" readonly>
+</div>
+
+<div>
+<label>Shop Logo</label>
+<input type="file" id="logoFile">
+</div>
+
+<div>
+<label>Shop Banner</label>
+<input type="file" id="bannerFile">
+</div>
+
+<div class="shop-buttons">
+
+<button onclick="saveSettings()">
+💾 Save Changes
+</button>
+
+
+<button onclick="viewStore()">
+🌍 View Store
+</button>
+
+
+</div>
+
+</div>
+
+
+<script>
+function viewStore(){
+
+const user =
+JSON.parse(
+localStorage.getItem("user")
+);
+
+window.open(
+"/store.html?seller=" +
+user.nickname,
+"_blank"
+);
+
+}
+
+async function saveSettings(){
+
+const user =
+JSON.parse(
+localStorage.getItem("user")
+);
+
+let logoUrl =
+localStorage.getItem("storeLogo") || "";
+
+let bannerUrl =
+localStorage.getItem("storeBanner") || "";
+
+/* LOGO */
+
+const logo =
+document.getElementById(
+"logoFile"
+).files[0];
+
+if(logo){
+
+const formData =
+new FormData();
+
+formData.append(
+"image",
+logo
+);
+
+const upload =
+await fetch(
+"/api/upload",
+{
+method:"POST",
+body:formData
+}
+);
+
+const result =
+await upload.json();
+
+logoUrl =
+result.image;
+
+}
+
+/* BANNER */
+
+const banner =
+document.getElementById(
+"bannerFile"
+).files[0];
+
+if(banner){
+
+const formData =
+new FormData();
+
+formData.append(
+"image",
+banner
+);
+
+const upload =
+await fetch(
+"/api/upload",
+{
+method:"POST",
+body:formData
+}
+);
+
+const result =
+await upload.json();
+
+bannerUrl =
+result.image;
+
+}
+
+/* SAVE STORE */
+
+const res =
+await fetch(
+
+"/api/users/store/" +
+user.nickname,
+
+{
+method:"PUT",
+
+headers:{
+"Content-Type":
+"application/json"
+},
+
+body:JSON.stringify({
+
+storeName:
+document.getElementById(
+"storeName"
+).value,
+
+storeDescription:
+document.getElementById(
+"storeDescription"
+).value,
+
+storeLogo:
+logoUrl,
+
+storeBanner:
+bannerUrl
+
+})
+
+}
+
+);
+
+const data =
+await res.json();
+
+alert(data.message);
+
+}
+
+loadSettings();
+
+</script>
+<script src="js/auth.js"></script>
+
+<script>
+requireRole("seller");
+</script>
+</body>
+
+</html>

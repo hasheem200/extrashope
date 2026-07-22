@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Admin Panel</title>
+
+<link rel="stylesheet"
+href="style.css">
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+🛡 Admin Panel
+</div>
+
+<nav>
+
+<a href="/">Home</a>
+
+<a href="admin-support.html">💬 Support Center</a>
+<a href="admin-Products-Manager.html">Products Manager</a>
+<a href="add-product.html">Add Product</a>
+<a href="admin-orders.html">Pending Orders</a>
+<a href="admin-payment.html">payment</a>
+<a href="admin.html">Admin Panel</a>
+<a href="admin-manage-users.html">👥 Manage Users</a>
+<a href="admin-withdraws.html">💸 Withdraw</a>
+<button onclick="logout()" class="logout-btn">
+🚪 Logout
+</button>
+</nav>
+
+</header>
+
+<div class="dashboard-layout">
+
+
+
+<!-- MAIN -->
+
+<div class="dashboard-main">
+
+<h1>
+Welcome Admin 👑
+</h1>
+
+<!-- STATS -->
+
+<div class="stats">
+
+<div class="stat-box">
+<h2 id="productsCount">0</h2>
+
+<a href="admin-Products-Manager.html">
+<button>
+Products
+</button>
+</a>
+
+</div>
+
+<div class="stat-box">
+<h2 id="pendingOrders">0</h2>
+<a href="admin-orders.html">
+<button>
+Pending Orders
+</button>
+</a>
+</div>
+
+<div class="stat-box">
+
+  <h2 id="pendingWithdrawsCount">0</h2>
+
+  <a href="pending-withdraws.html">
+    <button>
+      Pending Withdraws
+    </button>
+  </a>
+
+</div>
+
+<div class="stat-box">
+    <h2 id="buyersCount">0</h2>
+<p>👤 Buyers</p>
+</div>
+
+<div class="stat-box">
+<h2 id="sellersCount">0</h2>
+<p>👤 Sellers</p>
+</div>
+
+<div class="stat-box">
+
+<h2 id="earningsCount">
+$0
+</h2>
+
+<p>
+Earnings
+</p>
+
+</div>
+
+<div class="card">
+    <h2 id="adsRevenue">$0.00</h2>
+    <p>📢 Ads Revenue</p>
+</div>
+
+<div class="stat-box" onclick="location.href='admin-ads.html'">
+
+    <h2 id="pendingAds">
+        0
+    </h2>
+
+    <p>
+        📢 Ads
+    </p>
+
+</div>
+
+<div class="stat-box">
+    <h3><p>🏷 Banner Prices</p></h3>
+
+
+<button onclick="window.location.href='admin-banner-prices.html'">
+  Edit Prices
+</button>
+</div>
+
+<div class="stat-box">
+    <h3><p>💳 Payment Settings</p></h3>
+
+
+<button onclick="window.location.href='admin-payment-settings.html'">
+  Edit 
+</button>
+</div>
+
+</div>
+
+<div class="stat-box">
+
+<label>Commission</label>
+
+<select id="commissionPercent">
+
+    <option value="10">10%</option>
+    <option value="15">15%</option>
+    <option value="20">20%</option>
+    <option value="25">25%</option>
+    <option value="30">30%</option>
+    <option value="35">35%</option>
+
+</select>
+
+<button onclick="saveCommission()">
+    Save
+</button>
+
+</div>
+
+
+
+
+
+<!-- Withdraw Requests -->
+
+<div class="recent-orders">
+
+ 
+
+<div id="withdrawsContainer"></div>
+
+</div>
+
+<!-- PRODUCTS -->
+
+ 
+
+
+<!-- ORDERS -->
+
+ 
+
+<!-- USERS -->
+
+
+<!-- Seller -->
+
+
+
+<script>
+
+async function loadCommission(){
+
+    const res = await fetch("/api/settings");
+
+    const settings = await res.json();
+
+    document.getElementById("commissionPercent").value =
+        settings.commission;
+
+    document.getElementById("adsRevenue").innerText =
+        "$" + Number(settings.adsRevenue || 0).toFixed(2);    
+
+}
+
+async function saveCommission(){
+
+    const commission =
+        document.getElementById("commissionPercent").value;
+
+    await fetch("/api/settings",{
+
+        method:"PUT",
+
+        headers:{
+            "Content-Type":"application/json"
+        },
+
+        body:JSON.stringify({
+            commission
+        })
+
+    });
+
+    alert("Commission Updated ✅");
+
+}
+
+loadCommission();
+
+
+function loadWithdraws(){
+
+const withdraws =
+JSON.parse(localStorage.getItem("withdraws")) || [];
+
+const container =
+document.getElementById("withdrawsContainer");
+
+container.innerHTML = "";
+
+withdraws.forEach((item,index)=>{
+
+container.innerHTML += `
+
+<div class="admin-product">
+
+<div>
+
+<h2>$${item.amount}</h2>
+
+<p>${item.method}</p>
+
+<p>${item.status}</p>
+
+</div>
+
+<button onclick="approveWithdraw(${index})">
+
+Approve
+
+</button>
+
+<button onclick="rejectWithdraw(${index})">
+
+Reject
+
+</button>
+
+</div>
+
+`;
+
+});
+
+}
+
+function approveWithdraw(index){
+
+let withdraws =
+JSON.parse(localStorage.getItem("withdraws")) || [];
+
+withdraws[index].status =
+"Approved ✅";
+
+localStorage.setItem(
+"withdraws",
+JSON.stringify(withdraws)
+);
+
+loadWithdraws();
+
+}
+
+function rejectWithdraw(index){
+
+let withdraws =
+JSON.parse(localStorage.getItem("withdraws")) || [];
+
+withdraws[index].status =
+"Rejected ❌";
+
+localStorage.setItem(
+"withdraws",
+JSON.stringify(withdraws)
+);
+
+loadWithdraws();
+
+}
+
+loadWithdraws();
+
+async function editProduct(id){
+
+const name =
+prompt("New Product Name");
+
+const price =
+prompt("New Price");
+
+await fetch(
+
+"/api/products/" + id,
+
+{
+method:"PUT",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+name,
+price
+
+})
+
+}
+
+);
+
+alert("Product Updated ✔");
+
+loadProducts();
+
+}
+
+async function loadStats(){
+
+    // buyers & sellers
+    const statsRes = await fetch("/api/admin/stats");
+    const stats = await statsRes.json();
+
+    document.getElementById("buyersCount").innerText = stats.buyers;
+    document.getElementById("sellersCount").innerText = stats.sellers;
+
+    // pending withdraws
+    const withdrawRes = await fetch("/api/withdraws");
+    const withdraws = await withdrawRes.json();
+
+    const pending = withdraws.filter(
+        w => w.status === "Pending ⏳"
+    );
+
+    document.getElementById("pendingWithdrawsCount").innerText =
+        pending.length;
+}
+
+
+
+/* LOAD PRODUCTS */
+
+async function loadProducts(){
+
+const res =
+await fetch("/api/products");
+
+const products =
+await res.json();
+
+document.getElementById(
+"productsCount"
+).innerText = products.length;
+
+const container =
+document.getElementById(
+"productsContainer"
+);
+
+container.innerHTML = "";
+
+products.forEach(product=>{
+
+container.innerHTML += `
+
+<div class="admin-product">
+
+<img src="${product.image}">
+
+<div>
+
+<h2>${product.name}</h2>
+
+<p>$${product.price}</p>
+
+<p>${product.type}</p>
+
+</div>
+
+
+<button onclick="editProduct('${product._id}')">
+Edit
+</button>
+
+<button onclick="deleteProduct('${product._id}')">
+Delete
+</button>
+
+</div>
+
+`;
+
+});
+
+}
+
+/* DELETE PRODUCT */
+
+async function deleteProduct(id){
+
+await fetch(
+"/api/products/" + id,
+{
+method:"DELETE"
+}
+);
+
+alert("Product Deleted ❌");
+
+loadProducts();
+
+}
+
+/* LOAD USERS */
+
+
+
+
+
+
+
+/* LOAD */
+
+
+
+async function loadSellers(){
+
+const res =
+await fetch("/api/users");
+
+const users =
+await res.json();
+
+const sellers =
+users.filter(user => user.role === "seller");
+
+const container =
+document.getElementById("sellersContainer");
+
+container.innerHTML = "";
+
+sellers.forEach(user=>{
+
+container.innerHTML += `
+
+<div class="admin-product">
+
+<div>
+
+<h2>${user.nickname}</h2>
+
+<p>${user.email}</p>
+
+</div>
+
+<button onclick="verifySeller('${user._id}')">
+Verify
+</button>
+
+<button onclick="banSeller('${user._id}')">
+Ban
+</button>
+
+</div>
+
+`;
+
+});
+
+}
+
+async function addSeller(){
+
+const nickname =
+document.getElementById("sellerName").value;
+
+const email =
+document.getElementById("sellerEmail").value;
+
+const password =
+document.getElementById("sellerPassword").value;
+
+const res = await fetch(
+"/api/users/register",
+{
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+nickname,
+email,
+password,
+role:"seller"
+
+})
+
+}
+);
+
+const data = await res.json();
+
+alert(data.message);
+
+loadSellers();
+
+}
+
+
+
+
+
+async function loadPendingOrders(){
+
+const res =
+await fetch("/api/orders");
+
+const orders =
+await res.json();
+
+const pendingOrders =
+orders.filter(order =>
+order.status === "Pending"
+);
+
+document.getElementById(
+"pendingOrders"
+).innerText =
+pendingOrders.length;
+
+}
+
+async function loadOrders(){
+
+const res =
+await fetch("/api/orders");
+
+const orders =
+await res.json();
+
+const container =
+document.getElementById(
+"ordersContainer"
+);
+
+container.innerHTML = "";
+
+orders.forEach(order=>{
+
+container.innerHTML += `
+
+<div class="admin-product">
+
+<div>
+
+<h2>
+${order.customer || order.userName || "Unknown User"}
+</h2>
+
+<p>$${order.total}</p>
+
+<p>${order.status}</p>
+
+</div>
+
+${order.status !== "Completed ✅" ? `
+
+<button onclick="
+completeOrder('${order._id}')
+">
+Complete
+</button>
+
+` : ""}
+
+</div>
+
+`;
+
+});
+
+}
+
+async function completeOrder(id){
+
+await fetch(
+
+"/api/orders/" + id,
+
+{
+
+method:"PUT",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+status:"Completed ✅"
+
+})
+
+}
+
+);
+
+loadOrders();
+
+}
+
+async function loadAnalytics(){
+
+    const res =
+    await fetch("/api/settings/admin-wallet");
+
+    const data =
+    await res.json();
+
+    document.getElementById("earningsCount").innerText =
+        "$" + data.wallet.toFixed(2);
+
+}
+
+async function loadAdsStats(){
+
+    const res = await fetch("/api/ads");
+
+    const ads = await res.json();
+
+    const pending =
+        ads.filter(ad=>ad.status==="Pending");
+
+    document.getElementById("pendingAds").innerText =
+        pending.length;
+
+}
+
+let lastCount = 0;
+
+async function checkWithdraws(){
+
+  const res = await fetch("/api/withdraws/admin/all");
+  const data = await res.json();
+
+  const pending =
+    data.filter(w => w.status === "Pending ⏳");
+
+  if(lastCount && pending.length > lastCount){
+    alert("💸 New Withdraw Request");
+  }
+
+  lastCount = pending.length;
+}
+
+/* logout */
+function logout(){
+
+localStorage.removeItem("token");
+
+localStorage.removeItem("user");
+
+localStorage.removeItem("loggedIn");
+
+window.location.href="login.html";
+
+}
+
+
+setInterval(checkWithdraws,10000);
+
+checkWithdraws();
+
+loadStats();
+
+loadAnalytics();
+
+loadAdsStats();
+
+loadProducts();
+
+loadSellers();
+
+loadOrders();
+
+loadPendingOrders();
+
+</script>
+<script src="js/auth.js"></script>
+
+<script>
+requireRole("admin");
+</script>
+
+</body>
+
+</html>

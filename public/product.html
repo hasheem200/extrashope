@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Product Details</title>
+
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+🛒 Product Details
+</div>
+
+
+<nav>
+<a href="/">Home</a>
+<a href="cart.html">Cart</a>
+<a href="wishlist.html">Wishlist</a>
+</nav>
+
+</header>
+
+<div class="product-page" id="productPage"></div>
+
+<script>
+
+
+const params =
+new URLSearchParams(window.location.search);
+
+const productId = params.get("id");
+
+/* LOAD PRODUCT */
+
+async function loadProduct(){
+
+const apiProducts =
+await fetch("/api/products")
+.then(res => res.json());
+
+const localProducts =
+JSON.parse(localStorage.getItem("sellerProducts")) || [];
+
+const products =
+[...apiProducts, ...localProducts];
+
+const product =
+products.find(p => p.id == productId);
+
+const div =
+document.getElementById("productPage");
+
+const stockCount =
+(product.stockData || "")
+.split("\n")
+.filter(line => line.trim())
+.length;
+
+
+div.innerHTML = `
+
+<div class="product-details">
+
+<img src="${product.image}">
+
+<div class="details">
+
+<h1>${product.name}</h1>
+
+<p class="price">
+💲 ${product.price}
+</p>
+
+<p>
+🏪 Seller:
+<a href="store.html?seller=${product.seller}">
+${product.seller}
+</a>
+</p>
+
+<p>
+📦 Type:
+${product.type}
+</p>
+
+${
+product.category === "Instagram" ||
+product.category === "Facebook" ||
+product.category === "Google" ||
+product.category === "TikTok" ||
+product.category === "Discord" ||
+product.category === "Github" ||
+product.category === "Accounts Game"
+
+?
+
+`<p style="
+color:${stockCount > 0 ? 'green' : 'red'};
+font-weight:bold;
+">
+📦 Stock: ${stockCount}
+</p>`
+
+:
+
+""
+}
+
+${
+(
+product.category === "Instagram" ||
+product.category === "Facebook" ||
+product.category === "Google" ||
+product.category === "TikTok" ||
+product.category === "Discord" ||
+product.category === "Github" ||
+product.category === "Accounts Game"
+)
+&&
+(product.stockData || "")
+.split("\n")
+.filter(line => line.trim())
+.length <= 0
+
+?
+
+`<button disabled
+style="
+background:red;
+cursor:not-allowed;
+">
+Out Of Stock </button>`
+
+:
+
+`<button onclick='addToCart(${JSON.stringify(product)})'>
+Add To Cart </button>`
+}
+
+
+
+<button onclick="followSeller()"
+class="follow-btn">
+
+⭐ Follow Seller
+
+</button>
+
+<p id="followersCount">
+0 Followers
+</p>
+
+<hr>
+
+<h2>⭐ Store Rating</h2>
+
+<div id="stars">
+
+<span onclick="rateStore(1)">⭐</span>
+<span onclick="rateStore(2)">⭐</span>
+<span onclick="rateStore(3)">⭐</span>
+<span onclick="rateStore(4)">⭐</span>
+<span onclick="rateStore(5)">⭐</span>
+
+</div>
+
+<p id="ratingResult">
+No ratings yet
+</p>
+
+<hr>
+
+<h2>
+Customer Reviews 💬
+</h2>
+
+<div id="reviewsContainer"></div>
+
+<textarea
+id="reviewText"
+placeholder="Write review...">
+</textarea>
+
+<select id="reviewStars">
+
+<option value="5">⭐⭐⭐⭐⭐</option>
+<option value="4">⭐⭐⭐⭐</option>
+<option value="3">⭐⭐⭐</option>
+<option value="2">⭐⭐</option>
+<option value="1">⭐</option>
+
+</select>
+
+<button onclick="addReview()">
+Submit Review
+</button>
+
+<hr>
+
+<h2>
+Live Chat 💬
+</h2>
+
+<div id="chatMessages"></div>
+
+<input type="text"
+id="chatInput"
+placeholder="Write message...">
+
+<button onclick="sendMessage()">
+Send
+</button>
+
+</div>
+
+</div>
+
+`;
+
+showRating();
+
+loadReviews();
+
+loadMessages();
+
+showFollowers();
+
+}
+
+/* ADD TO CART */
+
+function addToCart(product){
+
+const stockCount =
+(product.stockData || "")
+.split("\n")
+.filter(line => line.trim())
+.length;
+
+if(
+(
+product.category === "Instagram" ||
+product.category === "Facebook" ||
+product.category === "Google" ||
+product.category === "TikTok" ||
+product.category === "Discord" ||
+product.category === "Github" ||
+product.category === "Accounts Game"
+)
+&&
+stockCount <= 0
+)
+
+{
+alert("Out Of Stock");
+return;
+}
+
+let cart =
+JSON.parse(localStorage.getItem("cart")) || [];
+
+cart.push(product);
+
+localStorage.setItem(
+"cart",
+JSON.stringify(cart)
+);
+
+alert(product.name + " added to cart");
+
+}
+
+
+/* RATING */
+
+function rateStore(stars){
+
+let ratings =
+JSON.parse(localStorage.getItem("ratings")) || [];
+
+ratings.push(stars);
+
+localStorage.setItem(
+"ratings",
+JSON.stringify(ratings)
+);
+
+showRating();
+
+}
+
+function showRating(){
+
+let ratings =
+JSON.parse(localStorage.getItem("ratings")) || [];
+
+const result =
+document.getElementById("ratingResult");
+
+if(!result) return;
+
+if(ratings.length === 0){
+
+result.innerText =
+"No ratings yet";
+
+return;
+
+}
+
+const total =
+ratings.reduce((a,b)=>a+b,0);
+
+const average =
+(total / ratings.length).toFixed(1);
+
+result.innerText =
+average + " ⭐ from " +
+ratings.length + " users";
+
+}
+
+/* REVIEWS */
+
+async function loadReviews(){
+
+const container =
+document.getElementById("reviewsContainer");
+
+container.innerHTML = "";
+
+const res =
+await fetch("/api/reviews/" + productId);
+
+const reviews =
+await res.json();
+
+if(reviews.length === 0){
+
+container.innerHTML =
+"<p>No reviews yet</p>";
+
+return;
+
+}
+
+reviews.forEach(review=>{
+
+container.innerHTML += `
+
+<div class="review">
+
+<h4>
+${review.user}
+${"⭐".repeat(review.stars)}
+</h4>
+
+<p>${review.text}</p>
+
+<p>🕒 ${new Date(review.createdAt).toLocaleString()}</p>
+
+</div>
+
+`;
+
+});
+
+}
+
+async function addReview(){
+
+const text =
+document.getElementById("reviewText").value;
+
+const stars =
+document.getElementById("reviewStars").value;
+
+const user =
+JSON.parse(localStorage.getItem("user"));
+
+if(!user){
+
+alert("Login First");
+
+return;
+
+}
+
+const apiProducts =
+await fetch("/api/products")
+.then(r=>r.json());
+
+const product =
+apiProducts.find(p=>p.id==productId);
+
+await fetch("/api/reviews",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+productId,
+
+seller:product.seller,
+
+user:user.nickname,
+
+stars,
+
+text
+
+})
+
+});
+
+document.getElementById("reviewText").value="";
+
+loadReviews();
+
+alert("Review Added");
+
+}
+
+
+/* CHAT */
+
+function loadMessages(){
+
+const chat =
+document.getElementById("chatMessages");
+
+if(!chat) return;
+
+let messages =
+JSON.parse(localStorage.getItem("messages")) || [];
+
+chat.innerHTML = "";
+
+messages.forEach(msg => {
+
+chat.innerHTML += `
+
+<div class="message">
+
+<h4>
+👤 ${msg.user}
+</h4>
+
+<p>
+${msg.text}
+</p>
+
+</div>
+
+`;
+
+});
+
+}
+
+function sendMessage(){
+
+const input =
+document.getElementById("chatInput");
+
+const user =
+JSON.parse(localStorage.getItem("user"));
+
+if(!user){
+
+alert("Login First");
+
+return;
+
+}
+
+if(input.value.trim() === "") return;
+
+let messages =
+JSON.parse(localStorage.getItem("messages")) || [];
+
+messages.push({
+
+user: user.nickname,
+
+text: input.value
+
+});
+
+localStorage.setItem(
+"messages",
+JSON.stringify(messages)
+);
+
+input.value = "";
+
+loadMessages();
+
+}
+
+/* FOLLOW */
+
+function followSeller(){
+
+let followers =
+Number(localStorage.getItem("followers")) || 0;
+
+followers++;
+
+localStorage.setItem(
+"followers",
+followers
+);
+
+showFollowers();
+
+alert("Seller Followed ⭐");
+
+}
+
+function showFollowers(){
+
+const count =
+document.getElementById("followersCount");
+
+if(!count) return;
+
+let followers =
+localStorage.getItem("followers") || 0;
+
+count.innerText =
+followers + " Followers";
+
+}
+
+
+
+/* START */
+showRating();
+
+loadReviews();
+
+loadMessages();
+
+showFollowers();
+loadProduct();
+
+
+</script>
+
+</body>
+</html>

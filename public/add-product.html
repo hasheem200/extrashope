@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Add Product</title>
+
+<link rel="stylesheet"
+href="style.css">
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+🛒 Add Product
+</div>
+
+<nav>
+<a href="/">Home</a>
+<a href="admin-Products-Manager.html">Products Manager</a>
+<a href="add-product.html">Add Product</a>
+<a href="admin-orders.html">Pending Orders</a>
+<a href="admin-payment.html">payment</a>
+<a href="admin.html">Admin Panel</a>
+</nav>
+
+</header>
+
+<div class="auth-container">
+
+<h1>
+➕ Add New Product
+</h1>
+
+<input
+type="text"
+id="productName"
+placeholder="Product Name">
+
+<input
+type="number"
+id="productPrice"
+placeholder="Price">
+
+<input
+type="file"
+id="imageFile">
+
+
+<input
+type="hidden"
+id="productType"
+value="Digital">
+
+
+
+<select id="productCategory">
+
+<option value="HollyWood">
+HollyWood
+</option>
+
+<option value="BollyWood">
+BollyWood
+</option>
+
+<option value="Hindi Dubbed">
+Hindi Dubbed
+</option>
+
+<option value="Web Series">
+Web Series
+</option>
+
+<option value=" Animated">
+Animated
+</option>
+
+<option value=" 18+">
+18+
+</option>
+
+<option value="Gaming">
+Gaming
+</option>
+
+<option value="software">
+software
+</option>
+
+<option value="e book">
+e book
+</option>
+
+<option value="Crypto">
+Crypto
+</option>
+
+<option value="Google">
+Google
+</option>
+
+<option value="YouTube">
+YouTube
+</option>
+
+<option value="Facebook ">
+Facebook 
+</option>
+
+<option value="Reddit">
+Reddit 
+</option>
+
+<option value="Instagram">
+Instagram
+</option>
+
+<option value="Twitter">
+Twitter
+</option>
+
+<option value="TikTok">
+TikTok
+</option>
+
+<option value="TikTok Ads">
+TikTok Ads
+</option>
+
+<option value="Other Emails">
+Other Emails
+</option>
+
+<option value="Github">
+Github
+</option>
+
+<option value="Discord">
+Discord
+</option>
+
+<option value="Snapchat">
+Snapchat
+</option>
+
+<option value="ID APPLE">
+ID APPLE
+</option>
+
+<option value="Linkedin">
+Linkedin
+</option>
+
+<option value="Spotify">
+Spotify
+</option>
+
+<option value="Tripadvisor">
+Tripadvisor
+</option>
+
+<option value="Trustpilot">
+Trustpilot
+</option>
+
+<option value="Medium">
+Medium
+</option>
+
+<option value="Pinterest">
+Pinterest
+</option>
+
+<option value="AI">
+AI
+</option>
+
+<option value="Other Social Networks">
+Other Social Networks
+</option>
+
+<option value="Web 2.0">
+Web 2.0
+</option>
+
+<option value="Multimedia Editors">
+Multimedia Editors
+</option>
+
+<option value="Amazon">
+Amazon
+</option>
+
+<option value="Key Windows/Microsoft">
+Key Windows/Microsoft
+</option>
+
+<option value="Accounts Game">
+Accounts Game
+</option>
+
+</select>
+
+<input type="text"
+id="productPlatform"
+placeholder="Platform (Instagram/Gmail/etc)">
+
+<input type="text"
+id="productLogin"
+placeholder="Login / Email">
+
+<input type="text"
+id="productPassword"
+placeholder="Password">
+
+<input type="text"
+id="productDownload"
+placeholder="Download Link">
+
+<button onclick="addProduct()">
+Add Product
+</button>
+
+</div>
+
+<script>
+
+async function approve(id){
+
+    await fetch("/api/ads/"+id,{
+
+        method:"PUT",
+
+        headers:{
+            "Content-Type":"application/json"
+        },
+
+        body:JSON.stringify({
+
+            status:"Approved"
+
+        })
+
+    });
+
+    await fetch("/api/settings/addAdsRevenue",{
+
+        method:"POST",
+
+        headers:{
+            "Content-Type":"application/json"
+        },
+
+        body:JSON.stringify({
+
+            adId:id
+
+        })
+
+    });
+
+    loadAds();
+
+}
+
+async function addProduct(){
+
+/* IMAGE */
+
+const file =
+document.getElementById("imageFile").files[0];
+
+if(!file){
+
+alert("Select Image First");
+
+return;
+
+}
+
+const formData =
+new FormData();
+
+formData.append("image", file);
+
+const uploadRes =
+await fetch("/api/upload",{
+
+method:"POST",
+
+body:formData
+
+});
+
+const uploadData =
+await uploadRes.json();
+
+const image =
+uploadData.image;
+
+/* PRODUCT */
+
+const product = {
+
+id:
+"PROD-" + Math.floor(
+100000 + Math.random() * 900000
+),
+
+name:
+document.getElementById("productName").value,
+
+price:
+document.getElementById("productPrice").value,
+
+image,
+
+type:
+document.getElementById("productType").value,
+
+category:
+document.getElementById("productCategory").value,
+
+platform:
+document.getElementById("productPlatform").value,
+
+login:
+document.getElementById("productLogin").value,
+
+password:
+document.getElementById("productPassword").value,
+
+download:
+document.getElementById("productDownload").value,
+
+seller:"Admin"
+
+};
+
+/* SAVE */
+
+const res = await fetch(
+
+"/api/products",
+
+{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify(product)
+
+}
+
+);
+
+const data =
+await res.json();
+
+alert(
+
+data.message +
+
+"\n\nProduct ID: " +
+
+product.id
+
+);
+
+window.location.href = "/";
+
+}
+
+</script>
+
+<script src="js/auth.js"></script>
+
+<script>
+requireRole("admin");
+</script>
+
+
+</body>
+
+</html>

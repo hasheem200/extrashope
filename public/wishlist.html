@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Wishlist</title>
+
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+❤️ Wishlist
+</div>
+
+<nav>
+
+<a href="/">Home</a>
+
+<a href="cart.html">
+Cart
+</a>
+
+</nav>
+
+</header>
+
+<div class="cart-container">
+
+<h1>My Wishlist</h1>
+
+<div id="wishlistItems"></div>
+
+</div>
+
+<script>
+
+let wishlist =
+JSON.parse(localStorage.getItem("wishlist")) || [];
+
+const div =
+document.getElementById("wishlistItems");
+
+function renderWishlist(){
+
+div.innerHTML = "";
+
+wishlist.forEach((item,index)=>{
+
+div.innerHTML += `
+
+<div class="cart-card">
+
+<img src="${item.image}">
+
+<div>
+
+<h3>${item.name}</h3>
+
+<p>$${item.price}</p>
+
+<button onclick="addToCart(${index})">
+Add To Cart
+</button>
+
+<button onclick="removeItem(${index})">
+Remove
+</button>
+
+</div>
+
+</div>
+
+`;
+
+});
+
+}
+
+function removeItem(index){
+
+wishlist.splice(index,1);
+
+localStorage.setItem(
+"wishlist",
+JSON.stringify(wishlist)
+);
+
+renderWishlist();
+
+}
+
+function addToCart(index){
+
+let cart =
+JSON.parse(localStorage.getItem("cart")) || [];
+
+cart.push(wishlist[index]);
+
+localStorage.setItem(
+"cart",
+JSON.stringify(cart)
+);
+
+alert("Added to cart 🛒");
+
+}
+
+renderWishlist();
+
+</script>
+
+</body>
+</html>

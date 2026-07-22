@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Payment Settings</title>
+
+<link rel="stylesheet" href="style.css">
+
+<style>
+
+.container{
+width:700px;
+max-width:95%;
+margin:40px auto;
+background:#fff;
+padding:30px;
+border-radius:12px;
+box-shadow:0 5px 15px rgba(0,0,0,.1);
+}
+
+input{
+width:100%;
+padding:15px;
+margin-bottom:20px;
+}
+
+button{
+width:100%;
+padding:15px;
+background:#ff9800;
+color:white;
+border:none;
+border-radius:8px;
+cursor:pointer;
+font-size:18px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+💳 Payment Settings
+</div>
+
+<nav>
+<a href="admin.html">← Back</a>
+</nav>
+
+</header>
+
+<div class="container">
+
+<h2>Payment Method</h2>
+
+<input id="name" placeholder="Payment Name">
+
+<input id="description" placeholder="Description">
+
+<input id="account" placeholder="Wallet / Account">
+
+<input id="network" placeholder="Network">
+
+<input id="buttonText" placeholder="Button Text">
+
+<button onclick="save()">
+Save Settings
+</button>
+
+</div>
+
+<script>
+
+async function load(){
+
+    const res =
+    await fetch("/api/payment-settings");
+
+    const data =
+    await res.json();
+
+    document.getElementById("name").value =
+    data.name || "";
+
+    document.getElementById("description").value =
+    data.description || "";
+
+    document.getElementById("account").value =
+    data.account || "";
+
+    document.getElementById("network").value =
+    data.network || "";
+
+    document.getElementById("buttonText").value =
+    data.buttonText || "";
+
+}
+
+async function save(){
+
+    await fetch("/api/payment-settings",{
+
+        method:"PUT",
+
+        headers:{
+            "Content-Type":"application/json"
+        },
+
+        body:JSON.stringify({
+
+            name:document.getElementById("name").value,
+
+            description:document.getElementById("description").value,
+
+            account:document.getElementById("account").value,
+
+            network:document.getElementById("network").value,
+
+            buttonText:document.getElementById("buttonText").value
+
+        })
+
+    });
+
+    alert("Saved Successfully ✅");
+
+}
+
+load();
+
+</script>
+
+</body>
+</html>

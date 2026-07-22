@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Admin Edit Product</title>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+🛠 Admin Edit Product
+</div>
+
+<nav>
+
+<a href="admin-Products-Manager.html">
+⬅ Back
+</a>
+
+</nav>
+
+</header>
+
+<div class="container">
+
+<h1>Edit Product</h1>
+
+<input id="name" placeholder="Product Name">
+<br><br>
+
+<input id="price" type="number" placeholder="Price">
+<br><br>
+
+<input id="category" placeholder="Category">
+<br><br>
+
+<input id="type" placeholder="Type">
+<br><br>
+
+<input id="image" placeholder="Image URL">
+<br><br>
+
+<textarea
+id="download"
+placeholder="Download Link"
+style="width:100%;height:100px;">
+</textarea>
+
+<br><br>
+
+<button onclick="saveProduct()">
+💾 Save Changes
+</button>
+
+</div>
+
+<script>
+
+const params =
+new URLSearchParams(window.location.search);
+
+const productId =
+params.get("id");
+
+let currentProductId = null;
+
+async function loadProduct(){
+
+const res =
+await fetch("/api/products");
+
+const products =
+await res.json();
+
+const product =
+products.find(product =>
+
+product.id == productId
+
+);
+
+if(!product){
+
+alert("Product Not Found");
+
+return;
+}
+
+currentProductId =
+product._id;
+
+document.getElementById("name").value =
+product.name || "";
+
+document.getElementById("price").value =
+product.price || "";
+
+document.getElementById("category").value =
+product.category || "";
+
+document.getElementById("type").value =
+product.type || "";
+
+document.getElementById("image").value =
+product.image || "";
+
+document.getElementById("download").value =
+product.download || "";
+
+}
+
+async function saveProduct(){
+
+await fetch(
+
+"/api/products/" + currentProductId,
+
+{
+method:"PUT",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+name:
+document.getElementById("name").value,
+
+price:
+document.getElementById("price").value,
+
+category:
+document.getElementById("category").value,
+
+type:
+document.getElementById("type").value,
+
+image:
+document.getElementById("image").value,
+
+download:
+document.getElementById("download").value
+
+})
+
+}
+
+);
+
+alert("Product Updated ✅");
+
+window.location.href =
+"admin-Products-Manager.html";
+
+}
+
+loadProduct();
+
+</script>
+<script src="js/auth.js"></script>
+
+<script>
+requireRole("admin");
+</script>
+
+</body>
+</html>

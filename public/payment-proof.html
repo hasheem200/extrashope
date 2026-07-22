@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Payment Proof</title>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+📤 Payment Proof
+</div>
+
+</header>
+
+<div class="proof-page">
+
+<h1>Upload Payment Screenshot</h1>
+
+<input
+type="file"
+id="proofImage">
+
+<button onclick="submitProof()">
+
+Send To Seller
+
+</button>
+
+</div>
+
+<script>
+
+function submitProof(){
+
+const file =
+document.getElementById("proofImage").files[0];
+
+if(!file){
+
+alert("Choose image");
+
+return;
+
+}
+
+const reader = new FileReader();
+
+reader.onload = function(e){
+
+const proofData = {
+
+image: e.target.result,
+
+status: "Pending Seller Approval",
+
+date: new Date().toLocaleString()
+
+};
+
+localStorage.setItem(
+"paymentProof",
+JSON.stringify(proofData)
+);
+
+alert("Proof sent to seller ✔");
+
+window.location.href =
+"seller-dashboard.html";
+
+};
+
+reader.readAsDataURL(file);
+
+}
+
+</script>
+
+</body>
+
+</html>

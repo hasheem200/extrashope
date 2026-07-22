@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "name": "Professional Camera",
+    "price": 900,
+    "image": "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=400"
+  },
+
+  {
+    "id": 2,
+    "name": "Headphones",
+    "price": 120,
+    "image": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=400"
+  },
+
+  {
+    "id": 3,
+    "name": "Smart Watch",
+    "price": 250,
+    "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=400"
+  }
+]

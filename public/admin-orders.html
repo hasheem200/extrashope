@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Admin Orders</title>
+
+<link rel="stylesheet"
+href="style.css">
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+📦 Admin Orders
+</div>
+
+<nav>
+<a href="/">Home</a>
+<a href="admin-Products-Manager.html">Products Manager</a>
+<a href="add-product.html">Add Product</a>
+<a href="admin-orders.html">Pending Orders</a>
+<a href="admin-payment.html">payment</a>
+<a href="admin.html">Admin Panel</a>
+</nav>
+
+</header>
+
+<div class="container">
+
+<h1>
+Pending Orders
+</h1>
+
+<div id="orders"></div>
+
+</div>
+
+<script>
+
+async function loadOrders(){
+
+const res =
+await fetch("/api/orders");
+
+const orders =
+await res.json();
+
+const ordersDiv =
+document.getElementById(
+"orders"
+);
+
+ordersDiv.innerHTML = "";
+
+orders
+.filter(order => order.status === "Pending")
+.forEach(order=>{
+
+ordersDiv.innerHTML += `
+
+<div class="cart-card">
+
+<h3>
+Customer:
+${order.customer || order.userName}
+</h3>
+
+<p>
+Total:
+$${order.total}
+</p>
+
+<p>
+Status:
+${order.status}
+</p>
+
+${
+order.paymentProof ?
+
+`<a
+href="${order.paymentProof}"
+target="_blank"
+>
+
+<a
+href="${order.paymentProof}"
+target="_blank"
+>
+
+<img
+src="${order.paymentProof}"
+width="200"
+style="
+cursor:pointer;
+border-radius:10px;
+">
+
+</a>`
+
+: ""
+
+}
+
+<a
+href="${order.paymentProof}"
+target="_blank"
+>
+
+<button>
+View Full Proof
+</button>
+
+</a>
+
+<br><br>
+
+<button
+onclick="approveOrder(
+'${order._id}'
+)">
+Approve
+</button>
+
+<button
+onclick="rejectOrder(
+'${order._id}'
+)">
+Reject
+</button>
+
+</div>
+
+<br>
+
+`;
+
+});
+
+}
+
+/* APPROVE */
+
+async function approveOrder(id){
+
+await fetch(
+
+"/api/orders/" + id,
+
+{
+
+method:"PUT",
+
+headers:{
+"Content-Type":
+"application/json"
+},
+
+body:JSON.stringify({
+
+status:"Approved"
+
+})
+
+}
+
+);
+
+alert(
+"Order Approved ✅"
+);
+
+loadOrders();
+
+}
+
+/* REJECT */
+
+async function rejectOrder(id){
+
+await fetch(
+
+"/api/orders/" + id,
+
+{
+
+method:"PUT",
+
+headers:{
+"Content-Type":
+"application/json"
+},
+
+body:JSON.stringify({
+
+status:"Rejected"
+
+})
+
+}
+
+);
+
+alert(
+"Order Rejected ❌"
+);
+
+loadOrders();
+
+}
+
+loadOrders();
+
+</script>
+<script src="js/auth.js"></script>
+
+<script>
+requireRole("admin");
+</script>
+
+</body>
+
+</html>

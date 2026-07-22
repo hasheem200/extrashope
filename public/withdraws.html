@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Withdraw Requests</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header>
+<div class="logo">💸 Withdraw Requests</div>
+
+<nav>
+<a href="/">Home</a>
+<a href="wallet.html">Wallet</a>
+</nav>
+</header>
+
+<div class="container">
+
+<h1>Withdraw Money</h1>
+
+<input type="number" id="withdrawAmount" placeholder="Amount">
+<input type="text" id="binanceAccount" placeholder="Binance Deposit Address">
+
+<select id="withdrawMethod">
+
+<option value="Crypto">Binance Wallet</option>
+
+</select>
+
+<button onclick="sendAll()">
+Send Request
+</button>
+
+<h2>My Requests</h2>
+
+<div id="withdrawContainer"></div>
+
+</div>
+
+
+
+<script>
+
+
+
+async function sendAll(){
+
+  const success =
+  await sendWithdrawRequest();
+
+  if(success){
+    sendTelegram();
+  }
+
+}
+
+/* CREATE WITHDRAW */
+
+async function sendWithdrawRequest(){
+
+  const user =
+  JSON.parse(
+    localStorage.getItem("user")
+  );
+
+  if(!user){
+    alert("Please login first");
+    return false;
+  }
+
+  const seller =
+  user.nickname;
+
+  const amount =
+  document.getElementById(
+    "withdrawAmount"
+  ).value;
+
+  const method =
+  document.getElementById(
+    "withdrawMethod"
+  ).value;
+
+  const binanceAccount =
+  document.getElementById(
+    "binanceAccount"
+  ).value;
+
+  if(!amount){
+    alert("Enter amount");
+    return false;
+  }
+
+  const res =
+  await fetch(
+    "/api/withdraws",
+    {
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        seller,
+        amount:Number(amount),
+        method,
+        binanceAccount
+      })
+    }
+  );
+
+  const data =
+  await res.json();
+
+  if(data.success){
+
+    alert(
+      "Withdraw Request Sent 💸"
+    );
+
+    loadWithdraws();
+
+    return true;
+
+  }else{
+
+    alert(
+      data.message
+    );
+
+    return false;
+  }
+
+}
+
+/* TELEGRAM */
+
+
+
+
+
+async function loadWithdraws(){
+
+  const user = JSON.parse(localStorage.getItem("user"));
+
+  if(!user){
+    return;
+  }
+
+  const seller = user.nickname;
+
+  console.log("Seller =", seller);
+
+  const res = await fetch(`/api/withdraws/${seller}`);
+
+  const withdraws = await res.json();
+
+  const container = document.getElementById("withdrawContainer");
+
+  container.innerHTML = "";
+
+  withdraws.forEach(item => {
+
+    container.innerHTML += `
+      <div class="admin-product">
+
+        <div>
+
+          <h2>$${item.amount}</h2>
+
+          <p>${item.method}</p>
+
+          <p>Status: ${item.status}</p>
+
+          <p>${new Date(item.createdAt).toLocaleString()}</p>
+
+          ${item.method === "Crypto"
+  ? `<p>Binance: ${item.binanceAccount || "—"}</p>`
+  : ""
+}
+
+          
+
+        </div>
+
+      </div>
+    `;
+
+  });
+
+}
+
+
+async function sendWithdrawRequest(){
+
+  const user = JSON.parse(localStorage.getItem("user"));
+
+  if(!user){
+    alert("Please login first");
+    return;
+  }
+
+  const seller = user.nickname; // مهم
+
+  const amount = document.getElementById("withdrawAmount").value;
+  const method = document.getElementById("withdrawMethod").value;
+  const binanceAccount = document.getElementById("binanceAccount")?.value;
+
+  if(!amount){
+    alert("Enter amount");
+    return;
+  }
+
+  const res = await fetch("/api/withdraws", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+  seller,
+  amount: Number(amount),
+  method,
+  binanceAccount
+})
+  });
+
+  const data = await res.json();
+
+  if(data.success){
+    alert("Withdraw Request Sent 💸");
+    loadWithdraws();
+  }else{
+    alert(data.message);
+  }
+}
+
+loadWithdraws();
+
+</script>
+<script src="js/auth.js"></script>
+
+<script>
+requireRole("seller");
+</script>
+
+</body>
+</html>

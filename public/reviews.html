@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Reviews</title>
+
+<link rel="stylesheet"
+href="style.css">
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+⭐ Reviews
+</div>
+
+</header>
+
+<div class="container">
+
+<h1>
+Product Reviews
+</h1>
+
+<input
+type="text"
+id="reviewName"
+placeholder="Your Name">
+
+<textarea
+id="reviewText"
+placeholder="Write review">
+</textarea>
+
+<select id="reviewRating">
+
+<option value="5">
+5 ⭐
+</option>
+
+<option value="4">
+4 ⭐
+</option>
+
+<option value="3">
+3 ⭐
+</option>
+
+<option value="2">
+2 ⭐
+</option>
+
+<option value="1">
+1 ⭐
+</option>
+
+</select>
+
+<button onclick="addReview()">
+Add Review
+</button>
+
+<div id="reviewsContainer"></div>
+
+</div>
+
+<script>
+
+function loadReviews(){
+
+const reviews =
+JSON.parse(localStorage.getItem("reviews")) || [];
+
+const container =
+document.getElementById("reviewsContainer");
+
+container.innerHTML = "";
+
+reviews.reverse().forEach(review=>{
+
+container.innerHTML += `
+
+<div class="admin-product">
+
+<div>
+
+<h2>${review.name}</h2>
+
+<p>${review.text}</p>
+
+<p>${review.rating} ⭐</p>
+
+</div>
+
+</div>
+
+`;
+
+});
+
+}
+
+function addReview(){
+
+const review = {
+
+name:
+document.getElementById("reviewName").value,
+
+text:
+document.getElementById("reviewText").value,
+
+rating:
+document.getElementById("reviewRating").value
+
+};
+
+let reviews =
+JSON.parse(localStorage.getItem("reviews")) || [];
+
+reviews.push(review);
+
+localStorage.setItem(
+"reviews",
+JSON.stringify(reviews)
+);
+
+alert("Review Added ⭐");
+
+loadReviews();
+
+}
+
+loadReviews();
+
+</script>
+
+</body>
+
+</html>

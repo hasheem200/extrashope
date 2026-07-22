@@ -1,0 +1,112 @@
+<h1>Edit Seller</h1>
+
+<input id="nickname">
+
+<input id="email">
+
+<input id="wallet">
+
+<input id="sales">
+
+<select id="role">
+
+<option value="seller">seller</option>
+
+<option value="admin">admin</option>
+
+<option value="buyer">buyer</option>
+
+</select>
+
+<button onclick="saveSeller()">
+Save
+</button>
+
+<script>
+    
+const id =
+new URLSearchParams(
+window.location.search
+).get("id");
+
+async function loadSeller(){
+
+const res =
+await fetch("/api/users");
+
+const users =
+await res.json();
+
+const seller =
+users.find(user =>
+user._id === id
+);
+
+document.getElementById("nickname").value =
+seller.nickname;
+
+document.getElementById("email").value =
+seller.email;
+
+document.getElementById("wallet").value =
+seller.wallet || 0;
+
+document.getElementById("sales").value =
+seller.totalSales || 0;
+
+document.getElementById("role").value =
+seller.role;
+
+}
+
+async function saveSeller(){
+
+await fetch(
+
+"/api/users/" + id,
+
+{
+
+method:"PUT",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+nickname:
+document.getElementById("nickname").value,
+
+email:
+document.getElementById("email").value,
+
+wallet:
+document.getElementById("wallet").value,
+
+totalSales:
+document.getElementById("sales").value,
+
+role:
+document.getElementById("role").value
+
+})
+
+}
+
+);
+
+alert("Seller Updated");
+
+window.location.href =
+"admin.html";
+
+}
+
+loadSeller();
+
+</script>
+
+</body>
+
+</html>

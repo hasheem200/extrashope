@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seller Store</title>
+
+<link rel="stylesheet" href="style.css">
+
+<style>
+.store-banner{
+height:220px;
+background:#f08c00;
+border-radius:15px 15px 0 0;
+}
+
+.store-card{
+background:white;
+border-radius:15px;
+overflow:hidden;
+margin:20px;
+box-shadow:0 2px 10px rgba(0,0,0,.1);
+}
+
+.store-info{
+display:flex;
+align-items:center;
+gap:20px;
+padding:20px;
+}
+
+.store-avatar img{
+width:90px;
+height:90px;
+border-radius:50%;
+object-fit:cover;
+}
+
+.store-avatar{
+width:90px;
+height:90px;
+border-radius:50%;
+background:#f08c00;
+color:white;
+font-size:40px;
+display:flex;
+align-items:center;
+justify-content:center;
+font-weight:bold;
+}
+
+.store-products{
+display:grid;
+grid-template-columns:
+repeat(auto-fill,minmax(250px,1fr));
+gap:20px;
+padding:20px;
+}
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+🏪 Seller Store
+</div>
+
+<nav>
+<a href="/">Home</a>
+<a href="profile.html">Profile</a>
+</nav>
+
+</header>
+
+<div class="store-card">
+
+<div id="storeBanner" class="store-banner"></div>
+
+<div class="store-info">
+
+<div id="storeAvatar" class="store-avatar">
+T
+</div>
+
+<div>
+
+<h2 id="storeName">
+Store
+</h2>
+
+<p id="storeDescription">
+Store Description
+</p>
+
+<p id="storeFollowers">
+0 Followers
+</p>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="container">
+
+<h2>Products</h2>
+
+<div
+class="store-products"
+id="storeProducts">
+</div>
+
+</div>
+
+<script>
+
+const params =
+new URLSearchParams(
+window.location.search
+);
+
+const sellerNickname =
+params.get("seller");
+
+async function loadSeller(){
+
+const res =
+await fetch("/api/users");
+
+const users =
+await res.json();
+
+const seller =
+users.find(
+u => u.nickname === sellerNickname
+);
+
+if(!seller) return;
+
+document.getElementById(
+"storeName"
+).innerText =
+seller.storeName ||
+seller.nickname;
+
+document.getElementById(
+"storeDescription"
+).innerText =
+seller.storeDescription || "";
+
+if(seller.storeLogo){
+
+document.getElementById(
+"storeAvatar"
+).innerHTML =
+
+`<img src="${seller.storeLogo}">`;
+
+}else{
+
+document.getElementById(
+"storeAvatar"
+).innerText =
+
+seller.nickname
+.charAt(0)
+.toUpperCase();
+
+}
+
+if(seller.storeBanner){
+
+document.getElementById(
+"storeBanner"
+).style.backgroundImage =
+
+`url(${seller.storeBanner})`;
+
+document.getElementById(
+"storeBanner"
+).style.backgroundSize =
+"cover";
+
+document.getElementById(
+"storeBanner"
+).style.backgroundPosition =
+"center";
+
+}
+
+if(seller.storeLogo){
+
+document.getElementById(
+"storeAvatar"
+).innerHTML =
+
+`<img src="${seller.storeLogo}"
+style="
+width:100%;
+height:100%;
+object-fit:cover;
+border-radius:50%;
+">`;
+
+}
+
+if(seller.storeBanner){
+
+document.getElementById(
+"storeBanner"
+).style.backgroundImage =
+
+`url(${seller.storeBanner})`;
+
+}
+
+}
+
+async function loadProducts(){
+
+const res =
+await fetch("/api/products");
+
+const products =
+await res.json();
+
+const sellerProducts =
+products.filter(
+p => p.seller === sellerNickname
+);
+
+const container =
+document.getElementById(
+"storeProducts"
+);
+
+container.innerHTML = "";
+
+sellerProducts.forEach(product=>{
+
+container.innerHTML += `
+
+<div class="card">
+
+<img
+src="${product.image}"
+width="100%">
+
+<h3>
+${product.name}
+</h3>
+
+<p>
+💲 ${product.price}
+</p>
+
+<a href="product.html?id=${product.id}">
+<button>
+View Product
+</button>
+</a>
+
+</div>
+
+`;
+
+});
+
+}
+
+loadSeller();
+loadProducts();
+
+</script>
+
+</body>
+
+</html>

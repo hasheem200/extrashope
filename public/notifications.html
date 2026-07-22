@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Notifications</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+🔔 Notifications
+</div>
+
+<nav>
+<a href="/">Home</a>
+
+<a href="notifications.html">
+🔔 <span id="notifCount">0</span>
+</a>
+</nav>
+
+</header>
+
+<div class="container">
+
+<h1>🔔 My Notifications</h1>
+
+<div id="notifications"></div>
+
+</div>
+
+<script>
+
+async function markAsRead(){
+
+  const user =
+  JSON.parse(localStorage.getItem("user"));
+
+  await fetch(
+    "/api/notifications/read/" +
+    user.nickname,
+    {
+      method:"PUT"
+    }
+  );
+
+}
+
+async function loadNotifications(){
+
+  const user =
+  JSON.parse(localStorage.getItem("user"));
+
+  if(!user) return;
+
+  const res =
+  await fetch(
+    "/api/notifications/" +
+    user.nickname
+  );
+
+  const data =
+  await res.json();
+
+  let html = "";
+
+  data.forEach(n => {
+
+    html += `
+      <div style="
+      border:1px solid #ddd;
+      padding:10px;
+      margin:10px;
+      border-radius:10px;
+      ">
+        <h3>${n.title}</h3>
+        <p>${n.message}</p>
+
+<small>
+${new Date(n.createdAt).toLocaleString()}
+</small>
+      </div>
+    `;
+
+  });
+
+  document.getElementById(
+    "notifications"
+  ).innerHTML = html;
+
+}
+
+async function loadNotifCount(){
+
+  const user =
+  JSON.parse(localStorage.getItem("user"));
+
+  if(!user) return;
+
+  const res =
+  await fetch(
+    "/api/notifications/" +
+    user.nickname
+  );
+
+  const data =
+  await res.json();
+
+  document.getElementById(
+    "notifCount"
+  ).innerText =
+  data.length;
+
+}
+
+
+
+async function start(){
+
+  await markAsRead();
+
+  await loadNotifications();
+
+  await loadNotifCount();
+
+}
+
+start();
+loadNotifications();
+loadNotifCount();
+
+</script>
+
+</body>
+</html>

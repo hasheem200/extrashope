@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Promotions</title>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+📢 Promotions
+</div>
+
+<nav>
+
+<a href="seller-dashboard.html">
+Dashboard
+</a>
+
+</nav>
+
+</header>
+
+<div class="container">
+
+<h1>Promote Your Products</h1>
+
+<div id="products"></div>
+
+</div>
+
+<script>
+
+const user =
+JSON.parse(
+localStorage.getItem("user")
+);
+
+async function loadProducts(){
+
+const res =
+await fetch("/api/products");
+
+const products =
+await res.json();
+
+const myProducts =
+products.filter(
+p => p.seller === user.nickname
+);
+
+const container =
+document.getElementById("products");
+
+container.innerHTML = "";
+
+if(myProducts.length === 0){
+
+container.innerHTML =
+"<p>No products found.</p>";
+
+return;
+
+}
+
+myProducts.forEach(product => {
+
+container.innerHTML += `
+
+<div class="card">
+
+<img
+src="${product.image}"
+width="120">
+
+<h3>${product.name}</h3>
+
+<p>$${product.price}</p>
+
+${
+product.promoted &&
+product.promotionEnd
+?
+
+`<p style="color:lime;">
+🔥 Promoted
+</p>`
+
+:
+
+""
+}
+
+<button onclick="
+promote(
+'${product._id}',
+3,
+5
+)">
+🔥 3 Days ($5)
+</button>
+
+<button onclick="
+promote(
+'${product._id}',
+7,
+10
+)">
+🔥 7 Days ($10)
+</button>
+
+<button onclick="
+promote(
+'${product._id}',
+30,
+25
+)">
+🔥 30 Days ($25)
+</button>
+
+</div>
+
+`;
+
+});
+
+}
+
+async function promote(
+productId,
+days,
+price
+){
+
+if(
+!confirm(
+`Promote for ${days} days?\nCost: $${price}`
+)
+){
+return;
+}
+
+const pay = await fetch(
+"/api/users/promote",
+{
+method:"POST",
+
+headers:{
+"Content-Type":
+"application/json"
+},
+
+body:JSON.stringify({
+
+seller:
+user.nickname,
+
+amount:
+price
+
+})
+
+}
+);
+
+const payData =
+await pay.json();
+
+if(!payData.success){
+
+alert(
+payData.message
+);
+
+return;
+
+}
+
+const promote =
+await fetch(
+
+"/api/products/promote/" +
+productId,
+
+{
+
+method:"PUT",
+
+headers:{
+"Content-Type":
+"application/json"
+},
+
+body:JSON.stringify({
+
+days
+
+})
+
+}
+
+);
+
+const data =
+await promote.json();
+
+alert(data.message);
+
+loadProducts();
+
+}
+
+loadProducts();
+
+</script>
+
+<script src="js/auth.js"></script>
+
+<script>
+requireRole("seller");
+</script>
+
+</body>
+
+</html>

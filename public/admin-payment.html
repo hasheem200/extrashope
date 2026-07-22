@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Admin Commission</title>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">
+👑 Admin Commission
+</div>
+
+<nav>
+
+<a href="/">Home</a>
+
+</nav>
+
+</header>
+
+<div class="admin-payment-page">
+
+<h1>Pay 1$ Commission</h1>
+
+<div class="crypto-box">
+
+<h2>🟡 Binance Admin Wallet</h2>
+
+<p>
+Send 1$ USDT (BEP20)
+</p>
+
+<div class="wallet">
+
+<input
+type="text"
+id="adminWallet"
+value="0xADMIN123456789BINANCE"
+readonly>
+
+<button onclick="copyAdminWallet()">
+Copy
+</button>
+
+</div>
+
+</div>
+
+<h2>Upload Payment Proof</h2>
+
+<input
+type="file"
+id="adminProof">
+
+<button onclick="sendToAdmin()">
+
+Send To Admin
+
+</button>
+
+<div id="adminResult"></div>
+
+</div>
+
+<script>
+
+/* COPY */
+
+function copyAdminWallet(){
+
+const wallet =
+document.getElementById("adminWallet");
+
+wallet.select();
+
+document.execCommand("copy");
+
+alert("Admin wallet copied ✔");
+
+}
+
+/* SEND */
+
+function sendToAdmin(){
+
+const file =
+document.getElementById("adminProof").files[0];
+
+if(!file){
+
+alert("Choose screenshot");
+
+return;
+
+}
+
+const reader = new FileReader();
+
+reader.onload = function(e){
+
+const adminProof = {
+
+image: e.target.result,
+
+status: "Pending Admin Approval",
+
+date: new Date().toLocaleString()
+
+};
+
+localStorage.setItem(
+"adminProof",
+JSON.stringify(adminProof)
+);
+
+showAdminApproval();
+
+};
+
+reader.readAsDataURL(file);
+
+}
+
+/* SHOW */
+
+function showAdminApproval(){
+
+const proof =
+JSON.parse(localStorage.getItem("adminProof"));
+
+const result =
+document.getElementById("adminResult");
+
+if(proof){
+
+result.innerHTML = `
+
+<div class="proof-card">
+
+<img src="${proof.image}">
+
+<h3>${proof.status}</h3>
+
+<p>${proof.date}</p>
+
+<button onclick="approveAdmin()">
+
+Approve & Deliver Product
+
+</button>
+
+</div>
+
+`;
+
+}
+
+}
+
+/* APPROVE */
+
+function approveAdmin(){
+
+localStorage.setItem(
+"productDelivered",
+"true"
+);
+
+alert("Product delivered to buyer 🎉");
+
+window.location.href =
+"orders.html";
+
+}
+
+/* AUTO LOAD */
+
+showAdminApproval();
+
+</script>
+<script src="js/auth.js"></script>
+
+<script>
+requireRole("admin");
+</script>
+
+</body>
+
+</html>
