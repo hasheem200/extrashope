@@ -37,7 +37,7 @@ Date.now() + 1000 * 60 * 30;
 await user.save();
 
 const link =
-`http://localhost:5001/reset-password.html?token=${token}`;
+`https://extrashope.com/reset-password.html?token=${token}`;
 
 await mailer.sendMail({
 
