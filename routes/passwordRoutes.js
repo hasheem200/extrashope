@@ -82,13 +82,11 @@ message:"Reset email sent"
 
 console.log(err);
 
-res.status(500).json({
-
-message: err.message || "Failed to send reset email"
-
-});
+res.status(500).json(err);
 
 }
+
+});
 
 
 /* RESET PASSWORD */
