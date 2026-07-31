@@ -79,7 +79,7 @@ $${product.price}
 <div class="buttons">
 
 <button
-onclick="window.location.href='product.html?id=${product.id}'">
+onclick="window.location.href='product?id=${product.id}'">
 🛒 Product Details
 </button>
 
@@ -351,7 +351,7 @@ products.forEach(product => {
 container.innerHTML += `
 
 <div class="promo-banner"
-onclick="window.location.href='product.html?id=${product.id}'">
+onclick="window.location.href='product?id=${product.id}'">
 
 <img src="${product.image}">
 

@@ -79,6 +79,11 @@ type:String,
 default:null
 },
 
+resetCode:{
+type:String,
+default:null
+},
+
 resetExpire:{
 type:Date,
 default:null

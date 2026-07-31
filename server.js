@@ -14,8 +14,29 @@ const app = express();
 
 app.use(express.json());
 
+/* ==========================
+   CLEAN URLs (remove .html)
+   Old links like /product.html?id=1 still work,
+   but get redirected (301) to /product?id=1
+========================== */
+
+app.get(/^\/(.+)\.html$/, (req, res) => {
+
+    const clean = req.params[0];
+
+    const query = req.url.includes("?")
+        ? req.url.slice(req.url.indexOf("?"))
+        : "";
+
+    res.redirect(301, "/" + clean + query);
+
+});
+
 app.use(express.static(
-path.join(__dirname,"public")
+path.join(__dirname,"public"),
+{
+    extensions: ["html"] // /product now resolves to product.html on disk
+}
 ));
 
 

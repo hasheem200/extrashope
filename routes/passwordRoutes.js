@@ -5,200 +5,210 @@ const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 
 const User = require("../models/User");
-const getMailer = require("../config/mailerFactory");
+const mailerFactory = require("../config/mailerFactory");
 const Settings = require("../models/Settings");
 
-/* FORGOT PASSWORD */
+/*
+  ==============================================================
+  Password reset now works with a 6-digit CODE emailed to the
+  user (instead of only a click-through link), as requested:
+  1) POST /forgot        { email }           -> emails a 6-digit code
+  2) POST /verify-code   { email, code }     -> confirms the code is valid
+  3) POST /reset         { email, code, password } -> sets new password
 
-router.post("/forgot", async(req,res)=>{
+  The old link-based /reset (token in URL) still works too, so
+  nothing that depended on it breaks.
+  ==============================================================
+*/
 
-try{
+/* FORGOT PASSWORD — sends a 6-digit code */
 
-const { email } = req.body;
+router.post("/forgot", async (req, res) => {
 
-const user =
-await User.findOne({ email });
+    try {
 
-if(!user){
+        const { email } = req.body;
 
-return res.json({
-message:"Email not found"
+        if (!email) {
+            return res.status(400).json({ message: "Email is required" });
+        }
+
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.json({ message: "Email not found" });
+        }
+
+        const settings = await Settings.findOne();
+
+        if (!settings || !settings.siteSettings ||
+            !settings.siteSettings.smtpUser || !settings.siteSettings.smtpPass) {
+
+            return res.status(500).json({
+                message: "Email is not configured on the server (SMTP user/pass missing in Admin → Website Settings)."
+            });
+
+        }
+
+        // 6-digit numeric code, valid for 10 minutes
+        const code = String(crypto.randomInt(100000, 999999));
+
+        // also keep a token for the old link-based flow (backward compatible)
+        const token = crypto.randomBytes(32).toString("hex");
+
+        user.resetToken = token;
+        user.resetCode = code;
+        user.resetExpire = Date.now() + 1000 * 60 * 10;
+
+        await user.save();
+
+        const siteUrl =
+            settings.siteSettings.siteUrl || `${req.protocol}://${req.get("host")}`;
+
+        const link = `${siteUrl}/reset-password?token=${token}`;
+
+        console.log("RESET CODE for", user.email, "=", code);
+
+        // Respond immediately — don't make the user wait on Gmail's
+        // handshake. Email goes out in the background below.
+        res.json({ message: "A verification code has been sent to your email." });
+
+        sendCodeEmail({ settings, user, code, link });
+
+    } catch (err) {
+
+        console.log(err);
+        res.status(500).json(err);
+
+    }
+
 });
 
-}
+/* Background sender, with the built-in 465→587 fallback + logging */
 
-const token =
-crypto.randomBytes(32).toString("hex");
+async function sendCodeEmail({ settings, user, code, link }) {
 
-user.resetToken = token;
+    try {
 
-user.resetExpire =
-Date.now() + 1000 * 60 * 30;
+        await mailerFactory.sendMail({
 
-await user.save();
+            to: user.email,
 
-const settings = await Settings.findOne();
+            subject: "Your Password Reset Code",
 
-const siteUrl =
-(settings?.siteSettings?.siteUrl || "http://localhost:5001")
-.replace(/\/+$/, "");
-
-const senderName =
-settings?.siteSettings?.senderName || "ExtraShope";
-
-const smtpUser =
-settings?.siteSettings?.smtpUser || "";
-
-const link =
-`${siteUrl}/reset-password?token=${token}`;
-
-console.log("SITE URL:", siteUrl);
-console.log("RESET LINK:", link);
-
-const mailer = await getMailer();
-
-await mailer.verify();
-
-console.log("SMTP VERIFIED");
-
-await mailer.sendMail({
-
-from:`${senderName} <${smtpUser}>`,
-
-to:user.email,
-
-subject:"Reset Password",
-
-html:`
-
+            html: `
 <h2>Hello ${user.nickname}</h2>
 
-<p>Click the button below to reset your password.</p>
+<p>Your password reset code is:</p>
+
+<div style="font-size:32px;font-weight:bold;letter-spacing:6px;
+background:#f5f5f5;padding:16px 24px;border-radius:8px;
+display:inline-block;color:#00c853;">
+${code}
+</div>
+
+<p style="margin-top:16px;">This code expires in 10 minutes.</p>
+
+<p>Or click the button below instead:</p>
 
 <a href="${link}"
-style="
-padding:12px 20px;
-background:#00c853;
-color:white;
-text-decoration:none;
-border-radius:6px;
-">
-
+style="padding:12px 20px;background:#00c853;color:white;
+text-decoration:none;border-radius:6px;display:inline-block;">
 Reset Password
-
 </a>
-
-<p>This link expires in 30 minutes.</p>
-
 `
 
-});
+        });
 
-res.json({
+    } catch (err) {
 
-message:"Reset email sent"
+        console.log(`⚠️  Could not deliver reset code to ${user.email}:`, err.message);
 
-});
-
-}catch(err){
-
-console.log("========== EMAIL ERROR ==========");
-console.log(err);
-console.log(err.message);
-console.log(err.response);
-console.log(err.responseCode);
-
-res.status(500).json({
-message:err.message
-});
+    }
 
 }
 
-});
+/* VERIFY CODE — lets the frontend check the code before showing the password field */
 
+router.post("/verify-code", async (req, res) => {
 
-/* RESET PASSWORD */
+    try {
 
-router.post("/reset", async(req,res)=>{
+        const { email, code } = req.body;
 
-try{
+        const user = await User.findOne({
+            email,
+            resetCode: code,
+            resetExpire: { $gt: Date.now() }
+        });
 
-const {
+        if (!user) {
+            return res.json({ success: false, message: "Invalid or expired code" });
+        }
 
-token,
+        res.json({ success: true, message: "Code verified" });
 
-password
+    } catch (err) {
 
-} = req.body;
+        console.log(err);
+        res.status(500).json(err);
 
-const user =
-await User.findOne({
-
-resetToken:token,
-
-resetExpire:{
-$gt:Date.now()
-}
-
-});
-
-if(!user){
-
-return res.json({
-
-message:"Invalid or expired link"
+    }
 
 });
 
-}
+/* RESET PASSWORD — by code (new) or by token (old links, still supported) */
 
-user.password =
-await bcrypt.hash(password,10);
+router.post("/reset", async (req, res) => {
 
-user.resetToken = undefined;
+    try {
 
-user.resetExpire = undefined;
+        const { token, email, code, password } = req.body;
 
-await user.save();
+        if (!password || password.length < 6) {
+            return res.json({ message: "Password must be at least 6 characters" });
+        }
 
-res.json({
+        let user = null;
 
-message:"Password updated successfully"
+        if (code && email) {
+
+            user = await User.findOne({
+                email,
+                resetCode: code,
+                resetExpire: { $gt: Date.now() }
+            });
+
+        } else if (token) {
+
+            user = await User.findOne({
+                resetToken: token,
+                resetExpire: { $gt: Date.now() }
+            });
+
+        }
+
+        if (!user) {
+            return res.json({ message: "Invalid or expired link" });
+        }
+
+        user.password = await bcrypt.hash(password, 10);
+
+        user.resetToken = undefined;
+        user.resetCode = undefined;
+        user.resetExpire = undefined;
+
+        await user.save();
+
+        res.json({ message: "Password updated successfully" });
+
+    } catch (err) {
+
+        console.log(err);
+        res.status(500).json(err);
+
+    }
 
 });
-
-}catch(err){
-
-console.log(err);
-
-res.status(500).json(err);
-
-}
-
-console.log("STEP 1");
-
-const mailer = await getMailer();
-
-console.log("STEP 2");
-
-console.log("Trying to send email...");
-
-await mailer.sendMail({
-
-from:`${senderName} <${smtpUser}>`,
-
-to:user.email,
-
-subject:"Reset Password",
-
-html:`...`
-
-});
-
-console.log("Email sent successfully");
-
-console.log("STEP 3");
-});
-
 
 module.exports = router;
