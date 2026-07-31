@@ -164,6 +164,11 @@ type:String,
 default:""
 },
 
+resendApiKey:{
+type:String,
+default:""
+},
+
 
 senderName:{
 type:String,

@@ -215,7 +215,7 @@ border-radius:8px;
 <div class="card">
  <h3><p> Email Settings</p></h3>
 
-<label>SMTP Email</label>
+<label>SMTP Email (Gmail)</label>
 
 <input id="smtpUser">
 
@@ -226,6 +226,10 @@ border-radius:8px;
 <label>Sender Name</label>
 
 <input id="senderName">
+
+<label>Resend API Key (recommended for hosts like Railway/Render that block Gmail SMTP — get free key at resend.com)</label>
+
+<input id="resendApiKey" placeholder="re_xxxxxxxxxxxx">
 
 </div>  
 
@@ -315,6 +319,7 @@ async function loadSettings() {
         document.getElementById('smtpUser').value = s.smtpUser || '';
         document.getElementById('smtpPass').value = s.smtpPass || '';
         document.getElementById('senderName').value = s.senderName || '';
+        document.getElementById('resendApiKey').value = s.resendApiKey || '';
         document.getElementById('headHtml').value = s.headHtml || '';
         document.getElementById('footerHtml').value = s.footerHtml || '';
        
@@ -364,6 +369,7 @@ async function saveSettings() {
             smtpUser: document.getElementById('smtpUser').value,
             smtpPass: document.getElementById('smtpPass').value,
             senderName: document.getElementById('senderName').value,
+            resendApiKey: document.getElementById('resendApiKey').value,
             headHtml: document.getElementById('headHtml').value,
             footerHtml: document.getElementById('footerHtml').value,
            

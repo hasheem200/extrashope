@@ -3,30 +3,18 @@ const Settings = require("../models/Settings");
 
 /*
   ==============================================================
-  Robust Gmail mailer.
+  Mailer with automatic HTTP fallback.
 
-  Problems this fixes:
-  1) Old code used service:"gmail" with NO timeouts. If the
-     hosting provider blocks outbound SMTP ports, the connection
-     just hangs forever — no error, no email, request stuck.
-  2) Some hosts block port 465 (SSL) but allow 587 (STARTTLS),
-     others are the opposite. There was no fallback, so one
-     blocked port meant total failure with no retry.
+  Confirmed on Railway logs: outbound SMTP (ports 465 AND 587) is
+  blocked at the network level (ENETUNREACH / Connection timeout).
+  This is Railway's own network policy on shared/hobby infra —
+  no application code can force a raw SMTP connection through it.
 
-  What this does now:
-  - Tries port 465 (SSL) first.
-  - If that fails/times out, automatically retries on port 587
-    (STARTTLS) before giving up.
-  - Every attempt has short, explicit timeouts so failures surface
-    in seconds, not minutes, and get logged with a clear reason.
-
-  NOTE (honesty): if the hosting provider blocks outbound traffic
-  on BOTH port 465 and 587 entirely (some free-tier hosts do),
-  no amount of application code can force an SMTP email through —
-  that is a network policy on the host, not a bug in this project.
-  In that case switch SEND_VIA to "http" below and plug in an
-  HTTP-based provider (Resend/Brevo/SendGrid), which works over
-  port 443 and is not affected by SMTP port blocking.
+  Fix: if a Resend API key is configured (Admin → Website Settings
+  → "Resend API Key"), emails are sent over Resend's HTTP API
+  (port 443 — same port normal web traffic uses, never blocked).
+  If no Resend key is set, it falls back to direct Gmail SMTP
+  (465 → 587) for hosts that don't block SMTP.
   ==============================================================
 */
 
@@ -38,13 +26,7 @@ async function getSmtpSettings() {
         throw new Error("Website settings not found in database.");
     }
 
-    const smtp = settings.siteSettings;
-
-    if (!smtp.smtpUser || !smtp.smtpPass) {
-        throw new Error("SMTP settings are missing (set SMTP user/pass in Admin → Website Settings).");
-    }
-
-    return { settings, smtp };
+    return { settings, smtp: settings.siteSettings };
 
 }
 
@@ -54,7 +36,7 @@ function buildTransport(smtp, port) {
 
         host: "smtp.gmail.com",
         port,
-        secure: port === 465, // 465 = SSL, 587 = STARTTLS
+        secure: port === 465,
 
         auth: {
             user: smtp.smtpUser,
@@ -65,7 +47,6 @@ function buildTransport(smtp, port) {
         maxConnections: 3,
         maxMessages: 50,
 
-        // fail fast instead of hanging when a port is blocked
         connectionTimeout: 8000,
         greetingTimeout: 8000,
         socketTimeout: 12000
@@ -79,21 +60,93 @@ async function getMailer() {
 
     const { smtp } = await getSmtpSettings();
 
+    if (!smtp.smtpUser || !smtp.smtpPass) {
+        throw new Error("SMTP settings are missing (set SMTP user/pass in Admin → Website Settings).");
+    }
+
     return buildTransport(smtp, 465);
+
+}
+
+/* Send via Resend's HTTP API (works over port 443, never blocked) */
+async function sendViaResend(smtp, senderName, mailOptions) {
+
+    // Resend's shared "onboarding@resend.dev" sender works out of the
+    // box with no domain setup. Once a custom domain is verified in
+    // the Resend dashboard, swap this for e.g. "noreply@yourdomain.com".
+    const fromAddress = smtp.resendFromEmail || "onboarding@resend.dev";
+
+    const response = await fetch("https://api.resend.com/emails", {
+
+        method: "POST",
+
+        headers: {
+            "Authorization": `Bearer ${smtp.resendApiKey}`,
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+            from: `${senderName} <${fromAddress}>`,
+            to: [mailOptions.to],
+            subject: mailOptions.subject,
+            html: mailOptions.html
+        })
+
+    });
+
+    if (!response.ok) {
+
+        const errText = await response.text();
+        throw new Error(`Resend API error (${response.status}): ${errText}`);
+
+    }
+
+    return await response.json();
 
 }
 
 /*
   sendMail(mailOptions) — use this for anything new.
-  Tries 465, falls back to 587 automatically, throws a clear
-  combined error only if BOTH fail.
+  1) If Resend API key is set -> send via Resend HTTP API (recommended
+     for Railway/Render/similar hosts that block SMTP).
+  2) Otherwise -> try Gmail SMTP on port 465, then 587.
 */
 async function sendMail(mailOptions) {
 
     const { settings, smtp } = await getSmtpSettings();
 
+    const senderName = settings.siteSettings.senderName || "ExtraShope";
+
+    if (smtp.resendApiKey) {
+
+        try {
+
+            await sendViaResend(smtp, senderName, mailOptions);
+
+            console.log(`✅ Email sent to ${mailOptions.to} via Resend`);
+
+            return { success: true, via: "resend" };
+
+        } catch (err) {
+
+            console.log(`❌ Resend send failed:`, err.message);
+
+            throw new Error(
+                `Resend email failed: ${err.message}. Check that the Resend API key is valid.`
+            );
+
+        }
+
+    }
+
+    // No Resend key configured -> fall back to direct Gmail SMTP
+
+    if (!smtp.smtpUser || !smtp.smtpPass) {
+        throw new Error("SMTP settings are missing (set SMTP user/pass, or better, a Resend API key, in Admin → Website Settings).");
+    }
+
     const from = mailOptions.from ||
-        `${settings.siteSettings.senderName} <${smtp.smtpUser}>`;
+        `${senderName} <${smtp.smtpUser}>`;
 
     const finalOptions = { ...mailOptions, from };
 
@@ -108,9 +161,9 @@ async function sendMail(mailOptions) {
 
             await transporter.sendMail(finalOptions);
 
-            console.log(`✅ Email sent to ${finalOptions.to} via port ${port}`);
+            console.log(`✅ Email sent to ${finalOptions.to} via SMTP port ${port}`);
 
-            return { success: true, port };
+            return { success: true, via: `smtp-${port}` };
 
         } catch (err) {
 
@@ -123,10 +176,10 @@ async function sendMail(mailOptions) {
     }
 
     throw new Error(
-        `Could not send email on either port 465 or 587. ` +
+        `Could not send email via SMTP on either port 465 or 587. ` +
         `This almost always means the hosting provider is blocking ` +
-        `outbound SMTP traffic, or the Gmail App Password is wrong. ` +
-        `Details -> ${errors.join(" | ")}`
+        `outbound SMTP traffic — add a Resend API key in Website Settings ` +
+        `to fix this. Details -> ${errors.join(" | ")}`
     );
 
 }
