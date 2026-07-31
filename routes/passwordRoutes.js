@@ -43,12 +43,16 @@ const siteUrl =
 settings.siteSettings.siteUrl || "http://localhost:5001";
 
 const link =
+<<<<<<< HEAD
 `${siteUrl}/reset-password.html?token=${token}`;
 
 console.log("SITE URL:", siteUrl);
 console.log("RESET LINK:", link);
 
 const mailer = await getMailer();
+=======
+`https://extrashope.com/reset-password.html?token=${token}`;
+>>>>>>> 81441a205521af138c5267630de83365fff358b8
 
 await mailer.sendMail({
 
