@@ -29,35 +29,43 @@ res.json(settings);
 
 
 
-router.put("/site", async(req,res)=>{
+router.put("/site", async (req, res) => {
 
-let settings = await Settings.findOne();
+    let settings = await Settings.findOne();
 
-if(!settings){
+    if (!settings) {
 
-settings = new Settings();
+        settings = new Settings();
 
-}
+    }
 
-settings.siteSettings = {
+    settings.siteSettings = {
 
-...(settings.siteSettings || {}),
+        ...(settings.siteSettings || {}),
 
-...req.body
+        ...(req.body.siteSettings || {}),
 
-};
+        storageSettings: {
 
-await settings.save();
+            ...(settings.siteSettings?.storageSettings || {}),
 
-res.json({
+            ...(req.body.storageSettings || {})
 
-message:"Website Settings Saved",
+        }
 
-settings
+    };
 
-});
+    await settings.save();
 
-});    
+    res.json({
+
+        message: "Website Settings Saved",
+
+        settings
+
+    });
+
+}); 
 
 /* UPDATE */
 

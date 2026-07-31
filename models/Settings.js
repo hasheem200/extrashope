@@ -164,6 +164,15 @@ type:String,
 default:""
 },
 
+
+senderName:{
+type:String,
+default:"ExtraShope"
+}
+
+},
+// ===== خارج siteSettings =====
+
 storageSettings:{
 
     storageType:{
@@ -180,14 +189,6 @@ storageSettings:{
     cloudPreset:String
 
 },
-
-senderName:{
-type:String,
-default:"ExtraShope"
-}
-
-},
-
 
 
 });
