@@ -24,9 +24,19 @@ type:String,
 default:"user"
 },
 
-blocked:{
-type:Boolean,
-default:false
+blocked: {
+    type: Boolean,
+    default: false
+},
+
+blockUntil: {
+    type: Date,
+    default: null
+},
+
+blockReason: {
+    type: String,
+    default: ""
 },
 
 wallet:{

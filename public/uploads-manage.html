@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Uploads Manager</title>
+
+<link rel="stylesheet" href="style.css">
+
+<style>
+
+body{
+background:#111;
+color:white;
+font-family:Arial;
+padding:20px;
+}
+
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:20px;
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+gap:15px;
+}
+
+.card{
+background:#1b1b1b;
+border-radius:10px;
+padding:10px;
+text-align:center;
+}
+
+.card img{
+
+width:100%;
+height:150px;
+object-fit:cover;
+border-radius:8px;
+
+}
+
+.card p{
+
+font-size:13px;
+word-break:break-all;
+
+}
+
+button{
+
+padding:8px 12px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+
+<h2>🗂️ File Manager</h2>
+
+<div>
+
+<input
+type="file"
+id="uploadFile"
+style="display:none"
+onchange="uploadFile()">
+
+<button
+onclick="document.getElementById('uploadFile').click()">
+
+⬆ Upload File
+
+</button>
+
+<button
+onclick="location.href='website-settings.html'">
+
+⬅ Back
+
+</button>
+
+</div>
+
+</div>
+
+
+
+<div id="uploadsGrid" class="grid">
+
+</div>
+
+<script>
+async function loadFiles(){
+
+const res =
+await fetch("/api/file-manager/files");
+
+const files =
+await res.json();
+
+const grid =
+document.getElementById("uploadsGrid");
+
+grid.innerHTML="";
+
+files.forEach(file=>{
+
+grid.innerHTML += `
+
+<div class="card">
+
+${getPreview(file)}
+
+<p>${file.name}</p>
+
+<small>${(file.size/1024).toFixed(1)} KB</small>
+
+<div style="margin-top:10px;display:flex;gap:6px;justify-content:center;">
+
+<button onclick="copyLink('${file.url}')">
+📋 Copy
+</button>
+
+<button
+style="background:#e53935;color:white;"
+onclick="deleteFile('${file.name}')">
+
+🗑 Delete
+
+</button>
+
+</div>
+
+</div>
+
+`;
+
+});
+
+}
+
+function copyLink(url){
+
+const full =
+location.origin + url;
+
+navigator.clipboard.writeText(full);
+
+alert("Copied!");
+
+}
+
+async function deleteFile(name){
+
+if(!confirm("Delete this file?"))
+return;
+
+await fetch("/api/file-manager/files/"+name,{
+
+method:"DELETE"
+
+});
+
+loadFiles();
+
+}
+
+// =====================
+// UPLOAD FILE
+// =====================
+
+async function uploadFile(){
+
+const input =
+document.getElementById("uploadFile");
+
+if(!input.files.length)
+return;
+
+const form =
+new FormData();
+
+form.append("file",input.files[0]);
+
+await fetch("/api/file-manager/upload",{
+
+method:"POST",
+
+body:form
+
+});
+
+input.value="";
+
+loadFiles();
+
+alert("Uploaded Successfully");
+
+}
+
+function getPreview(file){
+
+const ext =
+file.name.split(".").pop().toLowerCase();
+
+const imageTypes=[
+"png",
+"jpg",
+"jpeg",
+"gif",
+"webp",
+"svg"
+];
+
+if(imageTypes.includes(ext)){
+
+return `
+<img
+src="${file.url}"
+style="
+width:100%;
+height:150px;
+object-fit:cover;
+border-radius:8px;
+">
+`;
+
+}
+
+const icons={
+
+pdf:"📕",
+
+zip:"📦",
+
+rar:"📦",
+
+"7z":"📦",
+
+txt:"📄",
+
+doc:"📄",
+
+docx:"📄",
+
+xls:"📊",
+
+xlsx:"📊",
+
+mp4:"🎬",
+
+mov:"🎬",
+
+avi:"🎬",
+
+mp3:"🎵",
+
+wav:"🎵",
+
+exe:"⚙️"
+
+};
+
+const icon=
+icons[ext] || "📁";
+
+return `
+
+<div
+style="
+width:100%;
+height:150px;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:70px;
+background:#202020;
+border-radius:8px;
+">
+
+${icon}
+
+</div>
+
+`;
+
+}
+loadFiles();
+
+
+
+
+</script>
+
+</body>
+
+</html>

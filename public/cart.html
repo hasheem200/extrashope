@@ -10,8 +10,78 @@ content="width=device-width, initial-scale=1.0">
 
 <title>My Cart</title>
 
-<link rel="stylesheet"
-href="style.css">
+<!-- رابط الـ Favicon الافتراضي -->
+<link id="faviconLink" rel="icon" href="/favicon.ico">
+
+<script>
+// ============================================
+// تطبيق إعدادات الموقع (Favicon + Site Name)
+// ============================================
+async function applySiteSettings() {
+    try {
+        // 1. جلب إعدادات الموقع
+        const settingsRes = await fetch("/api/settings");
+        const settingsData = await settingsRes.json();
+        const s = settingsData.siteSettings || {};
+        const siteName = s.siteName || "My Site";
+        const siteIcon = s.siteIcon || "🛒";
+        const favicon = s.favicon || "";
+
+        // 2. تحديث الـ Favicon
+        if (favicon) {
+            const faviconLink = document.getElementById('faviconLink');
+            if (faviconLink) {
+                faviconLink.href = favicon;
+            } else {
+                const link = document.createElement('link');
+                link.id = 'faviconLink';
+                link.rel = 'icon';
+                link.href = favicon;
+                document.head.appendChild(link);
+            }
+        }
+
+        // 3. تحديث عنوان الصفحة (Title)
+        // احتفظ بالنص الحالي في الصفحة وأضف اسم الموقع
+        const currentTitle = document.title;
+        
+        // إذا كان العنوان الحالي هو "Loading..." أو فارغاً
+        if (currentTitle === "Loading..." || currentTitle === "") {
+            document.title = siteName;
+        } else {
+            // إذا كان العنوان يحتوي بالفعل على اسم الموقع، لا نكرره
+            if (!currentTitle.includes(siteName)) {
+                document.title = `${currentTitle} - ${siteName}`;
+            }
+        }
+
+        // 4. تحديث اسم الموقع في الهيدر (اختياري)
+        const logoEl = document.querySelector('.logo');
+        if (logoEl) {
+            if (siteIcon.startsWith('http') || siteIcon.startsWith('/')) {
+                logoEl.innerHTML = `<img src="${siteIcon}" style="height:24px;width:24px;vertical-align:middle;margin-right:8px;"> ${siteName}`;
+            } else {
+                logoEl.innerHTML = `${siteIcon} ${siteName}`;
+            }
+        }
+
+        console.log(`✅ Title: ${document.title}`);
+        console.log(`✅ Favicon: ${favicon || 'default'}`);
+
+    } catch (error) {
+        console.error('❌ Failed to apply settings:', error);
+        // في حال الخطأ، استخدم اسم الموقع الافتراضي
+        if (document.title === "Loading..." || document.title === "") {
+            document.title = "My Site";
+        }
+    }
+}
+
+// تنفيذ عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', applySiteSettings);
+</script>
+
+<link rel="stylesheet" href="style.css">
 
 </head>
 

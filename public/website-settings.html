@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Website Settings</title>
+
+<link rel="stylesheet" href="style.css">
+
+<style>
+
+body{
+background:#f5f5f5;
+font-family:Arial;
+}
+
+.container{
+width:900px;
+max-width:95%;
+margin:30px auto;
+background:#fff;
+padding:25px;
+border-radius:12px;
+box-shadow:0 5px 20px rgba(0,0,0,.1);
+}
+
+h1{
+margin-bottom:25px;
+}
+
+.section{
+margin-bottom:35px;
+padding-bottom:25px;
+border-bottom:1px solid #ddd;
+}
+
+.section h2{
+margin-bottom:20px;
+color:#2196f3;
+}
+
+label{
+display:block;
+margin-top:15px;
+margin-bottom:6px;
+font-weight:bold;
+}
+
+input,textarea{
+
+width:100%;
+padding:12px;
+border:1px solid #ccc;
+border-radius:6px;
+font-size:15px;
+
+}
+
+textarea{
+
+height:140px;
+
+resize:vertical;
+
+}
+
+button{
+
+margin-top:30px;
+
+padding:14px 30px;
+
+background:#00c853;
+
+color:white;
+
+border:none;
+
+border-radius:8px;
+
+cursor:pointer;
+
+font-size:17px;
+
+}
+
+button:hover{
+
+background:#00b248;
+
+}
+
+#msg{
+
+margin-top:20px;
+
+font-weight:bold;
+
+color:green;
+
+}
+
+.back{
+
+display:inline-block;
+
+margin-bottom:25px;
+
+text-decoration:none;
+
+background:#2196f3;
+
+color:white;
+
+padding:10px 18px;
+
+border-radius:8px;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+ <header>
+
+<div class="logo">
+⚙ Website Settings
+</div>
+
+<nav>
+
+<a href="uploads-manage.html">🗂️ File Manager</a>
+<a href="admin.html" class="back">
+
+⬅ Back To Admin
+
+</a>
+
+</nav>
+
+</header>
+    
+
+<div class="container">
+
+<div class="card">
+<h3><p> General</p></h3>
+
+<label>Site Name</label>
+
+<input id="siteName">
+
+<label>Site Icon (Emoji or Image URL)</label>
+    <input id="siteIcon" placeholder="🛒 or https://example.com/icon.png">
+
+<label>Site Title</label>
+
+<input id="siteTitle">
+
+<label>Website URL (Required for Emails)</label>
+
+<input id="siteUrl" placeholder="https://example.com">
+
+</div>
+
+
+<div class="card">
+ <h3><p> Logo & Icons</p></h3>
+<label>Logo URL</label>
+
+<input id="logo">
+
+<label>Favicon URL</label>
+
+<input id="favicon">
+
+<label>Apple Touch Icon</label>
+
+<input id="appleIcon">
+
+<label>MS Tile Image</label>
+
+<input id="tileImage">
+
+</div>
+
+
+<div class="card">
+     <h3><p> SEO</p></h3>
+
+<label>Meta Description</label>
+
+<textarea id="metaDescription"></textarea>
+
+<label>Meta Keywords</label>
+
+<textarea id="metaKeywords"></textarea>
+
+<label>Google Adsense ID</label>
+
+<input id="adsense">
+
+<label>Google Analytics ID</label>
+
+<input id="analytics">
+
+</div>
+
+
+<div class="card">
+ <h3><p> Email Settings</p></h3>
+
+<label>SMTP Email</label>
+
+<input id="smtpUser">
+
+<label>SMTP App Password</label>
+
+<input id="smtpPass">
+
+<label>Sender Name</label>
+
+<input id="senderName">
+
+</div>  
+
+
+<div class="card">
+<h3><p> 📦 Storage Settings</p></h3>
+<label>Storage Type</label>
+<select id="storageType">
+    <option value="local">Local Uploads</option>
+    <option value="cloudinary">Cloudinary</option>
+</select>
+
+
+<hr>
+
+<h4>Cloudinary</h4>
+
+<label>Cloud Name</label>
+<input id="cloudName">
+
+<label>API Key</label>
+<input id="cloudApiKey">
+
+<label>API Secret</label>
+<input id="cloudApiSecret">
+
+<label>Upload Preset (Optional)</label>
+    
+</div>
+
+
+<div class="card">
+<h3><p> Custom HTML</p></h3>
+
+<label>Head HTML</label>
+
+<textarea id="headHtml"></textarea>
+
+<label>Footer HTML</label>
+
+<textarea id="footerHtml"></textarea>
+
+</div>
+
+<div class="card">
+ <h3><p> Uploads Base URL</p></h3>
+ 
+<label>Uploads Base URL</label>
+<input id="uploadsBaseUrl" placeholder="https://cdn.example.com/uploads/">
+ </div>
+
+<button onclick="saveSettings()">
+
+💾 Save Settings
+
+</button>
+
+<p id="msg"></p>
+
+</div>
+
+<script>
+
+async function loadSettings() {
+    try {
+        const res = await fetch("/api/settings");
+        const data = await res.json();
+
+        if (!data.siteSettings) return;
+
+        const s = data.siteSettings;
+
+        // تعبئة جميع الحقول
+        document.getElementById('siteName').value = s.siteName || '';
+        document.getElementById('siteIcon').value = s.siteIcon || '';
+        document.getElementById('siteTitle').value = s.siteTitle || '';
+        document.getElementById('siteUrl').value = s.siteUrl || '';
+        document.getElementById('metaDescription').value = s.metaDescription || '';
+        document.getElementById('metaKeywords').value = s.metaKeywords || '';
+        document.getElementById('adsense').value = s.adsense || '';
+        document.getElementById('analytics').value = s.analytics || '';
+        document.getElementById('logo').value = s.logo || '';
+        document.getElementById('favicon').value = s.favicon || '';
+        document.getElementById('appleIcon').value = s.appleIcon || '';
+        document.getElementById("uploadsBaseUrl").value = s.uploadsBaseUrl || "";
+        document.getElementById('tileImage').value = s.tileImage || '';
+        document.getElementById('smtpUser').value = s.smtpUser || '';
+        document.getElementById('smtpPass').value = s.smtpPass || '';
+        document.getElementById('senderName').value = s.senderName || '';
+        document.getElementById('headHtml').value = s.headHtml || '';
+        document.getElementById('footerHtml').value = s.footerHtml || '';
+       
+        if (document.getElementById("storageType"))
+    document.getElementById("storageType").value =
+    s.storageSettings?.storageType || "local";
+
+if (document.getElementById("cloudName"))
+    document.getElementById("cloudName").value =
+    s.storageSettings?.cloudName || "";
+
+if (document.getElementById("cloudApiKey"))
+    document.getElementById("cloudApiKey").value =
+    s.storageSettings?.cloudApiKey || "";
+
+if (document.getElementById("cloudApiSecret"))
+    document.getElementById("cloudApiSecret").value =
+    s.storageSettings?.cloudApiSecret || "";
+
+if (document.getElementById("cloudPreset"))
+    document.getElementById("cloudPreset").value =
+    s.storageSettings?.cloudPreset || "";
+
+        
+        console.log('✅ Settings loaded successfully');
+    } catch (error) {
+        console.error('❌ Failed to load settings:', error);
+    }
+}
+
+async function saveSettings() {
+    const body = {
+        siteSettings: {
+            siteName: document.getElementById('siteName').value,
+            siteIcon: document.getElementById('siteIcon').value,
+            siteTitle: document.getElementById('siteTitle').value,
+            siteUrl: document.getElementById('siteUrl').value,
+            metaDescription: document.getElementById('metaDescription').value,
+            metaKeywords: document.getElementById('metaKeywords').value,
+            adsense: document.getElementById('adsense').value,
+            analytics: document.getElementById('analytics').value,
+            logo: document.getElementById('logo').value,
+            favicon: document.getElementById('favicon').value,
+            appleIcon: document.getElementById('appleIcon').value,
+            uploadsBaseUrl: document.getElementById("uploadsBaseUrl").value,
+            tileImage: document.getElementById('tileImage').value,
+            smtpUser: document.getElementById('smtpUser').value,
+            smtpPass: document.getElementById('smtpPass').value,
+            senderName: document.getElementById('senderName').value,
+            headHtml: document.getElementById('headHtml').value,
+            footerHtml: document.getElementById('footerHtml').value,
+           
+            
+       },
+       storageSettings: {
+    storageType: document.getElementById("storageType")?.value || "local",
+    cloudName: document.getElementById("cloudName")?.value || "",
+    cloudApiKey: document.getElementById("cloudApiKey")?.value || "",
+    cloudApiSecret: document.getElementById("cloudApiSecret")?.value || "",
+    cloudPreset: document.getElementById("cloudPreset")?.value || ""
+       }
+    };
+
+    const res = await fetch("/api/settings/site", {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(body)
+    });
+
+    if (res.ok) {
+        document.getElementById('msg').innerHTML = '✅ Settings Saved Successfully!';
+        document.getElementById('msg').style.color = 'green';
+        
+        // تحديث الصفحة الحالية بعد 1 ثانية
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
+    } else {
+        document.getElementById('msg').innerHTML = '❌ Failed to save settings';
+        document.getElementById('msg').style.color = 'red';
+    }
+}
+
+loadSettings();
+
+</script>
+
+</body>
+</html>

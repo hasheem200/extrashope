@@ -5,7 +5,8 @@ const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 
 const User = require("../models/User");
-const mailer = require("../config/mailer");
+const getMailer = require("../config/mailerFactory");
+const Settings = require("../models/Settings");
 
 /* FORGOT PASSWORD */
 
@@ -36,12 +37,22 @@ Date.now() + 1000 * 60 * 30;
 
 await user.save();
 
+const settings = await Settings.findOne();
+
+const siteUrl =
+settings.siteSettings.siteUrl || "http://localhost:5001";
+
 const link =
-`http://localhost:5001/reset-password.html?token=${token}`;
+`${siteUrl}/reset-password.html?token=${token}`;
+
+console.log("SITE URL:", siteUrl);
+console.log("RESET LINK:", link);
+
+const mailer = await getMailer();
 
 await mailer.sendMail({
 
-from:"My Shop <hasheem2005@gmail.com>",
+from:`${settings.siteSettings.senderName} <${settings.siteSettings.smtpUser}>`,
 
 to:user.email,
 

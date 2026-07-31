@@ -9,14 +9,16 @@ require("../models/Settings");
 
 router.get("/", async(req,res)=>{
 
-let settings =
-await Settings.findOne();
+let settings = await Settings.findOne();
 
 if(!settings){
 
-settings =
-await Settings.create({
-commission:10
+settings = await Settings.create({
+
+commission:10,
+
+siteSettings:{}
+
 });
 
 }
@@ -24,6 +26,38 @@ commission:10
 res.json(settings);
 
 });
+
+
+
+router.put("/site", async(req,res)=>{
+
+let settings = await Settings.findOne();
+
+if(!settings){
+
+settings = new Settings();
+
+}
+
+settings.siteSettings = {
+
+...(settings.siteSettings || {}),
+
+...req.body
+
+};
+
+await settings.save();
+
+res.json({
+
+message:"Website Settings Saved",
+
+settings
+
+});
+
+});    
 
 /* UPDATE */
 

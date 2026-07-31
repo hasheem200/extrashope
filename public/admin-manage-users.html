@@ -8,6 +8,77 @@
 
 <title>Manage Users</title>
 
+<!-- رابط الـ Favicon الافتراضي -->
+<link id="faviconLink" rel="icon" href="/favicon.ico">
+
+<script>
+// ============================================
+// تطبيق إعدادات الموقع (Favicon + Site Name)
+// ============================================
+async function applySiteSettings() {
+    try {
+        // 1. جلب إعدادات الموقع
+        const settingsRes = await fetch("/api/settings");
+        const settingsData = await settingsRes.json();
+        const s = settingsData.siteSettings || {};
+        const siteName = s.siteName || "My Site";
+        const siteIcon = s.siteIcon || "🛒";
+        const favicon = s.favicon || "";
+
+        // 2. تحديث الـ Favicon
+        if (favicon) {
+            const faviconLink = document.getElementById('faviconLink');
+            if (faviconLink) {
+                faviconLink.href = favicon;
+            } else {
+                const link = document.createElement('link');
+                link.id = 'faviconLink';
+                link.rel = 'icon';
+                link.href = favicon;
+                document.head.appendChild(link);
+            }
+        }
+
+        // 3. تحديث عنوان الصفحة (Title)
+        // احتفظ بالنص الحالي في الصفحة وأضف اسم الموقع
+        const currentTitle = document.title;
+        
+        // إذا كان العنوان الحالي هو "Loading..." أو فارغاً
+        if (currentTitle === "Loading..." || currentTitle === "") {
+            document.title = siteName;
+        } else {
+            // إذا كان العنوان يحتوي بالفعل على اسم الموقع، لا نكرره
+            if (!currentTitle.includes(siteName)) {
+                document.title = `${currentTitle} - ${siteName}`;
+            }
+        }
+
+        // 4. تحديث اسم الموقع في الهيدر (اختياري)
+        const logoEl = document.querySelector('.logo');
+        if (logoEl) {
+            if (siteIcon.startsWith('http') || siteIcon.startsWith('/')) {
+                logoEl.innerHTML = `<img src="${siteIcon}" style="height:24px;width:24px;vertical-align:middle;margin-right:8px;"> ${siteName}`;
+            } else {
+                logoEl.innerHTML = `${siteIcon} ${siteName}`;
+            }
+        }
+
+        console.log(`✅ Title: ${document.title}`);
+        console.log(`✅ Favicon: ${favicon || 'default'}`);
+
+    } catch (error) {
+        console.error('❌ Failed to apply settings:', error);
+        // في حال الخطأ، استخدم اسم الموقع الافتراضي
+        if (document.title === "Loading..." || document.title === "") {
+            document.title = "My Site";
+        }
+    }
+}
+
+// تنفيذ عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', applySiteSettings);
+</script>
+
 <link rel="stylesheet" href="style.css">
 
 <style>
@@ -108,6 +179,48 @@ text-decoration:none;
 
 </table>
 
+<!-- Block Dialog -->
+
+<dialog id="blockDialog">
+
+<h3>🚫 Block User</h3>
+
+<label>Duration</label>
+
+<select id="blockDays">
+
+<option value="1">1 Day</option>
+
+<option value="3">3 Days</option>
+
+<option value="7">7 Days</option>
+
+<option value="30">30 Days</option>
+
+<option value="permanent">Permanent</option>
+
+</select>
+
+<br><br>
+
+<label>Reason</label>
+
+<textarea
+id="blockReason"
+placeholder="Reason..."
+style="width:100%;height:80px;"></textarea>
+
+<br><br>
+
+<button onclick="confirmBlock()">
+Confirm
+</button>
+
+<button onclick="closeBlockDialog()">
+Cancel
+</button>
+
+</dialog>
 <script>
 
 async function loadUsers(){
@@ -145,9 +258,18 @@ style="width:220px;">
 
 <td>
 
-${user.blocked
+${
+user.blocked
 ?
-"🚫 Blocked"
+`🚫 Blocked
+<br>
+<small>
+${user.blockUntil
+?
+new Date(user.blockUntil).toLocaleDateString()
+:
+"Permanent"}
+</small>`
 :
 "✅ Active"
 }
@@ -180,18 +302,29 @@ Admin
 
 </button>
 
-<button
-class="block"
-onclick="toggleBlock('${user._id}')">
-
-${user.blocked
+${
+user.blocked
 ?
-"Unblock"
-:
-"Block"
-}
 
-</button>
+`<button
+class="block"
+onclick="unblockUser('${user._id}')">
+
+Unblock
+
+</button>`
+
+:
+
+`<button
+class="block"
+onclick="openBlockDialog('${user._id}')">
+
+Block
+
+</button>`
+
+}
 
 <button
 class="delete"
@@ -239,23 +372,7 @@ loadUsers();
 
 }
 
-async function toggleBlock(id){
 
-await fetch(
-
-"/api/users/"+id+"/block",
-
-{
-
-method:"PUT"
-
-}
-
-);
-
-loadUsers();
-
-}
 
 async function deleteUser(id){
 
@@ -272,6 +389,99 @@ method:"DELETE"
 }
 
 );
+
+loadUsers();
+
+}
+
+let selectedUserId = null;
+
+function openBlockDialog(id){
+
+selectedUserId = id;
+
+document.getElementById("blockReason").value="";
+
+document.getElementById("blockDays").value="3";
+
+document.getElementById("blockDialog").showModal();
+
+}
+
+function closeBlockDialog(){
+
+document.getElementById("blockDialog").close();
+
+}
+
+async function toggleBlock(id){
+
+    const users =
+    await fetch("/api/users")
+    .then(r=>r.json());
+
+    const user =
+    users.find(u=>u._id===id);
+
+    if(user.blocked){
+
+        await unblockUser(id);
+
+    }else{
+
+        openBlockDialog(id);
+
+    }
+
+}
+
+async function unblockUser(id){
+
+    await fetch("/api/users/" + id + "/block", {
+
+        method: "PUT",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+            days: 0
+        })
+
+    });
+
+    loadUsers();
+
+}
+
+async function confirmBlock(){
+ 
+
+const days =
+document.getElementById("blockDays").value;
+
+const reason =
+document.getElementById("blockReason").value;
+
+await fetch("/api/users/"+selectedUserId+"/block",{
+
+method:"PUT",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+
+days,
+reason
+
+})
+
+});
+
+closeBlockDialog();
 
 loadUsers();
 

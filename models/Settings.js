@@ -85,7 +85,113 @@ paymentSettings:{
 
 },
     
+siteSettings:{
+
+    siteName:{
+    type:String,
+    default:"ExtraShope"
+    },
+
+    siteIcon: {  // ✅ جديد
+        type: String,
+        default: "🛒"
+    },
+
+    siteTitle:{
+    type:String,
+    default:"$MODULE_NAME$ - ExtraShope"
+    },
+
+    siteUrl:{
+    type:String,
+    default:"https://extrashope.com"
+    },
+
+    metaDescription:{
+    type:String,
+    default:""
+    },
+
+metaKeywords:{
+type:String,
+default:""
+},
+
+adsense:{
+type:String,
+default:""
+},
+
+analytics:{
+type:String,
+default:""
+},
+
+
+
+favicon:{
+type:String,
+default:""
+},
+
+appleIcon:{
+type:String,
+default:""
+},
+
+tileImage:{
+type:String,
+default:""
+},
+
+headHtml:{
+type:String,
+default:""
+},
+
+footerHtml:{
+type:String,
+default:""
+},
+
+smtpUser:{
+type:String,
+default:""
+},
+
+smtpPass:{
+type:String,
+default:""
+},
+
+storageSettings:{
+
+    storageType:{
+        type:String,
+        default:"local"
+    },
+
+    cloudName:String,
+
+    cloudApiKey:String,
+
+    cloudApiSecret:String,
+
+    cloudPreset:String
+
+},
+
+senderName:{
+type:String,
+default:"ExtraShope"
+}
+
+},
+
+
 
 });
+
+
 
 module.exports = mongoose.model("Settings", settingsSchema);

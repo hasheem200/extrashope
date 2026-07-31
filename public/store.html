@@ -7,7 +7,84 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Seller Store</title>
 
+<script>
+// ============================================
+// 1️⃣ تحديث عنوان الصفحة: اسم المتجر - اسم الموقع
+// 2️⃣ تحديث الـ Favicon من الإعدادات
+// 3️⃣ تحديث اسم الموقع في الهيدر
+// ============================================
+async function applySiteSettings() {
+    try {
+        // 1. جلب إعدادات الموقع
+        const settingsRes = await fetch("/api/settings");
+        const settingsData = await settingsRes.json();
+        const s = settingsData.siteSettings || {};
+        const siteName = s.siteName || "My Site";
+        const siteIcon = s.siteIcon || "🏪";
+        const favicon = s.favicon || "";
+
+        // 2. تحديث الـ Favicon
+        if (favicon) {
+            const faviconLink = document.getElementById('faviconLink');
+            if (faviconLink) {
+                faviconLink.href = favicon;
+            } else {
+                const link = document.createElement('link');
+                link.id = 'faviconLink';
+                link.rel = 'icon';
+                link.href = favicon;
+                document.head.appendChild(link);
+            }
+        }
+
+        // 3. تحديث اسم الموقع في الهيدر
+        const logoEl = document.querySelector('.logo');
+        if (logoEl) {
+            if (siteIcon.startsWith('http') || siteIcon.startsWith('/')) {
+                logoEl.innerHTML = `<img src="${siteIcon}" style="height:24px;width:24px;vertical-align:middle;margin-right:8px;"> ${siteName}`;
+            } else {
+                logoEl.innerHTML = `${siteIcon} ${siteName}`;
+            }
+        }
+
+        // 4. جلب اسم المتجر من الـ URL
+        const params = new URLSearchParams(window.location.search);
+        const sellerNickname = params.get("seller");
+
+        if (!sellerNickname) {
+            document.title = `Store - ${siteName}`;
+            return;
+        }
+
+        // 5. جلب بيانات البائع
+        const usersRes = await fetch("/api/users");
+        const users = await usersRes.json();
+        const seller = users.find(u => u.nickname === sellerNickname);
+
+        // 6. تحديث عنوان الصفحة
+        if (seller) {
+            const storeName = seller.storeName || seller.nickname || "Store";
+            document.title = `${storeName} - ${siteName}`;
+        } else {
+            document.title = `Store - ${siteName}`;
+        }
+
+        console.log(`✅ Title: ${document.title}`);
+        console.log(`✅ Favicon: ${favicon || 'default'}`);
+
+    } catch (error) {
+        console.error('❌ Failed to apply settings:', error);
+        document.title = "Store - My Site";
+    }
+}
+
+// تنفيذ عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', applySiteSettings);
+</script>
+
+
 <link rel="stylesheet" href="style.css">
+
 
 <style>
 .store-banner{

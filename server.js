@@ -69,6 +69,15 @@ require("./routes/adminWithdrawRoutes");
 
 const Support = require("./models/Support");
 
+const fileManagerRoutes =
+require("./routes/fileManagerRoutes");
+
+const robotsRoutes =
+require("./routes/robotsRoutes");
+
+const sitemapRoutes =
+require("./routes/sitemapRoutes");
+
 
 
 /* API */
@@ -94,6 +103,13 @@ app.use("/api/reviews",reviewRoutes);
 app.use("/api/settings", settingsRoutes);
 
 app.use("/api/admin-withdraws", adminWithdrawRoutes);
+
+app.use("/api/file-manager",fileManagerRoutes);
+
+app.use("/robots.txt", robotsRoutes);
+
+app.use("/sitemap.xml", sitemapRoutes);
+
 /* HOME */
 
 app.get("/",(req,res)=>{
@@ -324,8 +340,28 @@ const allUsers = await User.find();
 console.log(allUsers.map(u => u.nickname));
 
 const user = await User.findOne({
+    
     nickname: seller
 });
+
+// ===============================
+// Auto Unblock
+// ===============================
+
+if(user.blocked){
+
+if(user.blockUntil && new Date(user.blockUntil) <= new Date()){
+
+user.blocked = false;
+user.blockUntil = null;
+user.blockReason = "";
+
+await user.save();
+
+}
+
+}
+
 
 console.log("User =", user);
 

@@ -114,7 +114,15 @@ message:"Wrong Password"
 if(user.blocked){
 
 return res.json({
-message:"Your account is blocked"
+
+message:"Your account is blocked.",
+
+blocked:true,
+
+until:user.blockUntil,
+
+reason:user.blockReason
+
 });
 
 }
@@ -363,12 +371,15 @@ res.status(500).json(err);
 
 /* BLOCK / UNBLOCK USER */
 
-router.put("/:id/block", async(req,res)=>{
+/* BLOCK / UNBLOCK USER */
+
+router.put("/:id/block", async (req, res) => {
+ 
+    console.log(req.body);
 
 try{
 
-const user =
-await User.findById(req.params.id);
+const user = await User.findById(req.params.id);
 
 if(!user){
 
@@ -378,16 +389,56 @@ message:"User not found"
 
 }
 
-user.blocked = !user.blocked;
+const { days, reason } = req.body;
+
+// ===== Unblock =====
+
+if(days===0){
+
+user.blocked=false;
+user.blockUntil=null;
+user.blockReason="";
+
+await user.save();
+
+return res.json({
+message:"User Unblocked",
+user
+});
+
+}
+
+// ===== Permanent =====
+
+if(days==="permanent"){
+
+user.blocked=true;
+user.blockUntil=null;
+
+}else{
+
+user.blocked=true;
+
+user.blockUntil=new Date(
+Date.now() + Number(days)*24*60*60*1000
+);
+
+}
+
+user.blockReason=reason || "";
 
 await user.save();
 
 res.json({
-message:"User Updated",
+
+message:"User Blocked",
 user
+
 });
 
 }catch(err){
+
+console.log(err);
 
 res.status(500).json(err);
 

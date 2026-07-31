@@ -5,9 +5,90 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Product Details</title>
+<title>Product Details</title>  <!-- مؤقت -->
+
+<!-- ✅ رابط الـ Favicon الافتراضي (سيتم تحديثه عبر JavaScript) -->
+<link id="faviconLink" rel="icon" href="/favicon.ico">
+
+<script>
+// ============================================
+// 1️⃣ تحديث عنوان الصفحة: اسم المنتج - اسم الموقع
+// 2️⃣ تحديث الـ Favicon من الإعدادات
+// 3️⃣ تحديث اسم الموقع في الهيدر
+// ============================================
+async function applySiteSettings() {
+    try {
+        // 1. جلب إعدادات الموقع
+        const settingsRes = await fetch("/api/settings");
+        const settingsData = await settingsRes.json();
+        const s = settingsData.siteSettings || {};
+     
+        const favicon = s.favicon || "";
+
+        // 2. تحديث الـ Favicon
+        if (favicon) {
+            const faviconLink = document.getElementById('faviconLink');
+            if (faviconLink) {
+                faviconLink.href = favicon;
+            } else {
+                // إذا لم يوجد الرابط، أنشئ واحداً
+                const link = document.createElement('link');
+                link.id = 'faviconLink';
+                link.rel = 'icon';
+                link.href = favicon;
+                document.head.appendChild(link);
+            }
+        }
+
+        // 3. تحديث اسم الموقع في الهيدر
+        const logoEl = document.querySelector('.logo');
+        if (logoEl) {
+            // إذا كان يوجد صورة في الأيقونة
+            if (siteIcon.startsWith('http') || siteIcon.startsWith('/')) {
+                logoEl.innerHTML = `<img src="${siteIcon}" style="height:24px;width:24px;vertical-align:middle;margin-right:8px;"> ${siteName}`;
+            } else {
+                logoEl.innerHTML = `${siteIcon} ${siteName}`;
+            }
+        }
+
+        // 4. جلب اسم المنتج من الـ URL
+        const params = new URLSearchParams(window.location.search);
+        const productId = params.get("id");
+
+        if (!productId) {
+            document.title = `Product - ${siteName}`;
+            return;
+        }
+
+        // 5. جلب بيانات المنتج
+        const productsRes = await fetch("/api/products");
+        const products = await productsRes.json();
+        const localProducts = JSON.parse(localStorage.getItem("sellerProducts")) || [];
+        const allProducts = [...products, ...localProducts];
+        const product = allProducts.find(p => p.id == productId);
+
+        // 6. تحديث عنوان الصفحة
+        if (product && product.name) {
+            document.title = `${product.name} - ${siteName}`;
+        } else {
+            document.title = `Product - ${siteName}`;
+        }
+
+        console.log(`✅ Title: ${document.title}`);
+        console.log(`✅ Favicon: ${favicon || 'default'}`);
+
+    } catch (error) {
+        console.error('❌ Failed to apply settings:', error);
+        document.title = "Product - My Site";
+    }
+}
+
+// تنفيذ عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', applySiteSettings);
+</script>
 
 <link rel="stylesheet" href="style.css">
+
 </head>
 
 <body>
@@ -28,6 +109,8 @@
 </header>
 
 <div class="product-page" id="productPage"></div>
+
+
 
 <script>
 
@@ -53,6 +136,68 @@ const products =
 
 const product =
 products.find(p => p.id == productId);
+
+// جلب البائع
+const users =
+await fetch("/api/users")
+.then(r => r.json());
+
+const seller =
+users.find(u => u.nickname === product.seller);
+
+// هل البائع محظور؟
+const sellerBlocked =
+seller &&
+seller.blocked &&
+(
+    seller.blockUntil === null ||
+    new Date(seller.blockUntil) > new Date()
+);
+
+let blockHtml = "";
+
+if(sellerBlocked){
+
+    let remain = "";
+
+    if(seller.blockUntil){
+
+        const diff =
+        new Date(seller.blockUntil) - new Date();
+
+        remain =
+        Math.ceil(diff / 86400000);
+
+    }
+
+    blockHtml = `
+    <div style="
+    background:#3b0000;
+    color:#fff;
+    padding:15px;
+    border-radius:10px;
+    margin:15px 0;
+    border:1px solid red;
+    ">
+
+    <h3>🚫 Seller Account Suspended</h3>
+
+    <p>
+    ${seller.blockReason || "This seller is temporarily suspended."}
+    </p>
+
+    ${
+    seller.blockUntil
+    ?
+    `<b>Remaining:</b> ${remain} Day(s)`
+    :
+    `<b>Permanent Suspension</b>`
+    }
+
+    </div>
+    `;
+
+}
 
 const div =
 document.getElementById("productPage");
@@ -114,6 +259,22 @@ font-weight:bold;
 }
 
 ${
+sellerBlocked
+?
+
+`<button
+disabled
+style="
+background:#b71c1c;
+cursor:not-allowed;
+opacity:.8;
+">
+🚫 Seller Suspended
+</button>`
+
+:
+
+(
 (
 product.category === "Instagram" ||
 product.category === "Facebook" ||
@@ -128,20 +289,24 @@ product.category === "Accounts Game"
 .split("\n")
 .filter(line => line.trim())
 .length <= 0
+)
 
 ?
 
-`<button disabled
+`<button
+disabled
 style="
 background:red;
 cursor:not-allowed;
 ">
-Out Of Stock </button>`
+Out Of Stock
+</button>`
 
 :
 
 `<button onclick='addToCart(${JSON.stringify(product)})'>
-Add To Cart </button>`
+Add To Cart
+</button>`
 }
 
 
@@ -156,6 +321,8 @@ class="follow-btn">
 <p id="followersCount">
 0 Followers
 </p>
+
+${blockHtml}
 
 <hr>
 
@@ -547,6 +714,55 @@ followers + " Followers";
 
 
 /* START */
+
+
+// ============================================
+// تحديث عنوان الصفحة: اسم المنتج - اسم الموقع
+// ============================================
+async function updateProductTitle() {
+    try {
+        // 1. جلب إعدادات الموقع
+        const settingsRes = await fetch("/api/settings");
+        const settingsData = await settingsRes.json();
+        const siteName = settingsData.siteSettings?.siteName || "My Shop";
+
+        // 2. جلب ID المنتج من الـ URL
+        const params = new URLSearchParams(window.location.search);
+        const productId = params.get("id");
+
+        if (!productId) {
+            document.title = `Product - ${siteName}`;
+            return;
+        }
+
+        // 3. جلب بيانات المنتج
+        const productsRes = await fetch("/api/products");
+        const products = await productsRes.json();
+        
+        // البحث عن المنتج (مع دعم المنتجات المحلية)
+        const localProducts = JSON.parse(localStorage.getItem("sellerProducts")) || [];
+        const allProducts = [...products, ...localProducts];
+        const product = allProducts.find(p => p.id == productId);
+
+        
+        // 4. تحديث العنوان
+        if (product && product.name) {
+            document.title = `${product.name} - ${siteName}`;
+        } else {
+            document.title = `Product - ${siteName}`;
+        }
+
+        console.log(`✅ Title updated: ${document.title}`);
+
+    } catch (error) {
+        console.error('❌ Failed to update title:', error);
+        document.title = "Product - My Shop";
+    }
+}
+
+// تنفيذ عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', updateProductTitle);
+
 showRating();
 
 loadReviews();
