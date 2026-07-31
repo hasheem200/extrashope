@@ -40,7 +40,14 @@ await user.save();
 const settings = await Settings.findOne();
 
 const siteUrl =
-settings.siteSettings.siteUrl || "http://localhost:5001";
+(settings?.siteSettings?.siteUrl || "http://localhost:5001")
+.replace(/\/+$/, "");
+
+const senderName =
+settings?.siteSettings?.senderName || "ExtraShope";
+
+const smtpUser =
+settings?.siteSettings?.smtpUser || "";
 
 const link =
 `${siteUrl}/reset-password?token=${token}`;
@@ -50,10 +57,13 @@ console.log("RESET LINK:", link);
 
 const mailer = await getMailer();
 
+await mailer.verify();
+
+console.log("SMTP VERIFIED");
 
 await mailer.sendMail({
 
-from:`${settings.siteSettings.senderName} <${settings.siteSettings.smtpUser}>`,
+from:`${senderName} <${smtpUser}>`,
 
 to:user.email,
 
@@ -92,9 +102,15 @@ message:"Reset email sent"
 
 }catch(err){
 
+console.log("========== EMAIL ERROR ==========");
 console.log(err);
+console.log(err.message);
+console.log(err.response);
+console.log(err.responseCode);
 
-res.status(500).json(err);
+res.status(500).json({
+message:err.message
+});
 
 }
 
@@ -159,6 +175,30 @@ res.status(500).json(err);
 
 }
 
+console.log("STEP 1");
+
+const mailer = await getMailer();
+
+console.log("STEP 2");
+
+console.log("Trying to send email...");
+
+await mailer.sendMail({
+
+from:`${senderName} <${smtpUser}>`,
+
+to:user.email,
+
+subject:"Reset Password",
+
+html:`...`
+
 });
+
+console.log("Email sent successfully");
+
+console.log("STEP 3");
+});
+
 
 module.exports = router;
