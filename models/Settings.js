@@ -169,6 +169,11 @@ type:String,
 default:""
 },
 
+resendFromEmail:{
+type:String,
+default:""
+},
+
 
 senderName:{
 type:String,

@@ -231,6 +231,10 @@ border-radius:8px;
 
 <input id="resendApiKey" placeholder="re_xxxxxxxxxxxx">
 
+<label>Resend Sender Email (leave blank until your domain is verified on Resend — uses onboarding@resend.dev by default, which can only email your own Resend account address)</label>
+
+<input id="resendFromEmail" placeholder="noreply@yourdomain.com">
+
 </div>  
 
 
@@ -320,6 +324,7 @@ async function loadSettings() {
         document.getElementById('smtpPass').value = s.smtpPass || '';
         document.getElementById('senderName').value = s.senderName || '';
         document.getElementById('resendApiKey').value = s.resendApiKey || '';
+        document.getElementById('resendFromEmail').value = s.resendFromEmail || '';
         document.getElementById('headHtml').value = s.headHtml || '';
         document.getElementById('footerHtml').value = s.footerHtml || '';
        
@@ -370,6 +375,7 @@ async function saveSettings() {
             smtpPass: document.getElementById('smtpPass').value,
             senderName: document.getElementById('senderName').value,
             resendApiKey: document.getElementById('resendApiKey').value,
+            resendFromEmail: document.getElementById('resendFromEmail').value,
             headHtml: document.getElementById('headHtml').value,
             footerHtml: document.getElementById('footerHtml').value,
            
