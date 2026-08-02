@@ -2,10 +2,11 @@ const express = require("express");
 const router = express.Router();
 
 const Notification = require("../models/Notification");
+const { verifyToken, requireSelfOrAdmin } = require("../middleware/auth");
 
-/* GET USER NOTIFICATIONS */
+/* GET USER NOTIFICATIONS — owner or admin only */
 
-router.get("/:user", async (req, res) => {
+router.get("/:user", verifyToken, requireSelfOrAdmin(req => req.params.user), async (req, res) => {
 
   const notifications =
   await Notification.find({
@@ -18,7 +19,7 @@ router.get("/:user", async (req, res) => {
 
 });
 
-router.put("/read/:user", async (req,res)=>{
+router.put("/read/:user", verifyToken, requireSelfOrAdmin(req => req.params.user), async (req,res)=>{
 
   await Notification.updateMany(
     {

@@ -1,16 +1,58 @@
+/* DEPLOYMENT: loads variables from a local .env file (if present)
+   into process.env — needed for MONGO_URI/PORT/NODE_ENV to work
+   during local development. On Railway/most hosts this is a no-op
+   since they inject environment variables directly, but it's what
+   makes the same code work the same way locally too. "dotenv" was
+   already a listed dependency but was never actually loaded. */
+require("dotenv").config();
+
 const express = require("express");
 const mongoose = require("mongoose");
 const path = require("path");
+const compression = require("compression");
 const User = require("./models/User");
 const Settings = require("./models/Settings");
 const settingsRoutes = require("./routes/settingsRoutes");
 const Advertisement = require("./models/Advertisement");
+const { verifyToken, requireRole } = require("./middleware/auth");
 
 
 const app = express();
 
 
 /* MIDDLEWARE */
+
+/* PERFORMANCE: gzip/br-compress every response (HTML, JSON, CSS, JS).
+   This alone typically cuts page-load transfer size by 60-80% —
+   the single biggest, lowest-risk win for load speed. */
+app.use(compression());
+
+/* DEPLOYMENT: force HTTPS in production. Railway (and most PaaS)
+   terminate SSL at their edge and forward plain HTTP internally,
+   setting the "x-forwarded-proto" header so the app can tell what
+   the original request used. This redirects any stray HTTP request
+   to HTTPS — a no-op locally (no x-forwarded-proto header) and a
+   no-op if the request already arrived as HTTPS. */
+app.use((req, res, next) => {
+
+    if (
+        process.env.NODE_ENV === "production" &&
+        req.headers["x-forwarded-proto"] === "http"
+    ) {
+        return res.redirect(301, "https://" + req.headers.host + req.url);
+    }
+
+    next();
+
+});
+
+/* DEPLOYMENT: lightweight health check for the hosting platform's
+   uptime monitor — deliberately does NOT touch the database, so it
+   still responds even if MongoDB is temporarily unreachable, which
+   is exactly when you want a health check to be informative. */
+app.get("/health", (req, res) => {
+    res.json({ status: "ok", uptime: process.uptime() });
+});
 
 app.use(express.json());
 
@@ -35,17 +77,47 @@ app.get(/^\/(.+)\.html$/, (req, res) => {
 app.use(express.static(
 path.join(__dirname,"public"),
 {
-    extensions: ["html"] // /product now resolves to product.html on disk
+    extensions: ["html"], // /product now resolves to product.html on disk
+
+    /* PERFORMANCE: cache static assets so the browser doesn't
+       re-download them on every visit.
+       - Images/uploads: long cache (7 days) — filenames are
+         timestamp-based, so a new upload is always a new URL.
+       - CSS/JS: short cache (10 min) — this project is still
+         being actively edited, so a long cache here would hide
+         your own fixes from your browser after each deploy.
+       - HTML: no cache — always revalidate, pages change often. */
+    setHeaders: (res, filePath) => {
+
+        if (filePath.endsWith(".html")) {
+            res.setHeader("Cache-Control", "no-cache");
+        } else if (filePath.endsWith(".css") || filePath.endsWith(".js")) {
+            res.setHeader("Cache-Control", "public, max-age=600"); // 10 minutes
+        } else {
+            res.setHeader("Cache-Control", "public, max-age=604800"); // 7 days
+        }
+
+    }
 }
 ));
 
 
 /* MONGODB */
 
+/* DEPLOYMENT: this connection string used to be hardcoded directly
+   in the source code (with real credentials) — meaning anyone with
+   access to the GitHub repo could see the database password. Now
+   it reads from the MONGO_URI environment variable if set (add it
+   in Railway → Variables), and only falls back to the old hardcoded
+   value if that variable isn't set, so nothing breaks if you don't
+   set it right away. Recommended: set MONGO_URI and consider
+   rotating this password since it has been sitting in the repo. */
 
+const MONGO_URI = process.env.MONGO_URI ||
+"mongodb://hasheem2005:hasheem2005@ac-pnnb30o-shard-00-00.vg3kqox.mongodb.net:27017,ac-pnnb30o-shard-00-01.vg3kqox.mongodb.net:27017,ac-pnnb30o-shard-00-02.vg3kqox.mongodb.net:27017/amazon?ssl=true&replicaSet=atlas-i75yrt-shard-0&authSource=admin&retryWrites=true&w=majority&appName=amazon";
 
 mongoose.connect(
-"mongodb://hasheem2005:hasheem2005@ac-pnnb30o-shard-00-00.vg3kqox.mongodb.net:27017,ac-pnnb30o-shard-00-01.vg3kqox.mongodb.net:27017,ac-pnnb30o-shard-00-02.vg3kqox.mongodb.net:27017/amazon?ssl=true&replicaSet=atlas-i75yrt-shard-0&authSource=admin&retryWrites=true&w=majority&appName=amazon"
+MONGO_URI
 )
 .then(()=>{
   console.log("MongoDB Connected");
@@ -93,6 +165,9 @@ const Support = require("./models/Support");
 const fileManagerRoutes =
 require("./routes/fileManagerRoutes");
 
+const backupRoutes =
+require("./routes/backupRoutes");
+
 const robotsRoutes =
 require("./routes/robotsRoutes");
 
@@ -126,6 +201,8 @@ app.use("/api/settings", settingsRoutes);
 app.use("/api/admin-withdraws", adminWithdrawRoutes);
 
 app.use("/api/file-manager",fileManagerRoutes);
+
+app.use("/api/backup",backupRoutes);
 
 app.use("/robots.txt", robotsRoutes);
 
@@ -173,7 +250,9 @@ app.post("/api/support", async (req, res) => {
 
 });
 
-app.get("/api/support", async (req, res) => {
+/* SECURITY: contact/support messages contain personal info
+   (name, email, message) — admin only to view. */
+app.get("/api/support", verifyToken, requireRole("admin"), async (req, res) => {
 
     try{
 
@@ -191,7 +270,9 @@ app.get("/api/support", async (req, res) => {
 
 });
 
-app.put("/api/payment-settings", async(req,res)=>{
+/* SECURITY: payment settings hold the store's real payout
+   address — admin only to change. */
+app.put("/api/payment-settings", verifyToken, requireRole("admin"), async(req,res)=>{
 
     let settings =
     await Settings.findOne();
@@ -215,7 +296,7 @@ app.put("/api/payment-settings", async(req,res)=>{
 
 });
 
-app.put("/api/support/:id", async (req,res)=>{
+app.put("/api/support/:id", verifyToken, requireRole("admin"), async (req,res)=>{
 
     try{
 
@@ -246,13 +327,16 @@ app.put("/api/support/:id", async (req,res)=>{
 /* ADVERTISEMENTS API */
 /* ========================= */
 
-/* CREATE */
+/* CREATE — must be logged in */
 
-app.post("/api/ads", async (req,res)=>{
+app.post("/api/ads", verifyToken, async (req,res)=>{
 
     try{
 
-        const ad = new Advertisement(req.body);
+        const ad = new Advertisement({
+            ...req.body,
+            advertiser: req.user.nickname // trust the token, not the body
+        });
 
         await ad.save();
 
@@ -270,9 +354,9 @@ app.post("/api/ads", async (req,res)=>{
 
 });
 
-/* GET ALL */
+/* GET ALL — admin only (management list; public-facing ads use /api/ads/live) */
 
-app.get("/api/ads", async (req,res)=>{
+app.get("/api/ads", verifyToken, requireRole("admin"), async (req,res)=>{
 
     try{
 
@@ -290,9 +374,9 @@ app.get("/api/ads", async (req,res)=>{
 
 });
 
-/* UPDATE */
+/* UPDATE (approve/reject) — admin only: this credits the admin wallet */
 
-app.put("/api/ads/:id", async (req,res)=>{
+app.put("/api/ads/:id", verifyToken, requireRole("admin"), async (req,res)=>{
 
     const ad = await Advertisement.findById(req.params.id);
 
@@ -350,9 +434,19 @@ app.put("/api/ads/:id", async (req,res)=>{
 
 
 
-app.post("/api/users/promote", async (req, res) => {
+app.post("/api/users/promote", verifyToken, async (req, res) => {
 
     const { seller, amount } = req.body;
+
+    // SECURITY: this deducts real money from a wallet — it must
+    // only ever be the logged-in user's own wallet, never one
+    // picked arbitrarily from the request body.
+    if(req.user.role !== "admin" && req.user.nickname !== seller){
+        return res.status(403).json({
+            success:false,
+            message:"You don't have permission to do that."
+        });
+    }
 
     console.log("Seller =", seller);
 
@@ -433,7 +527,12 @@ res.json({
 
 });
 
-app.get("/api/admin/stats", async (req, res) => {
+/* SECURITY: this used to be defined 3 times (Express only uses
+   the first match, so the other 2 were dead code) and had zero
+   auth — anyone could dump every user account. Now one route,
+   admin only. */
+
+app.get("/api/admin/stats", verifyToken, requireRole("admin"), async (req, res) => {
 
     try {
 
@@ -458,46 +557,6 @@ app.get("/api/admin/stats", async (req, res) => {
         });
 
     }
-
-});
-
-app.get("/api/admin/stats", async (req, res) => {
-
-    try {
-
-        const buyers = await User.countDocuments({
-            role: "user"
-        });
-
-        const sellers = await User.countDocuments({
-            role: "seller"
-        });
-
-        res.json({
-            buyers,
-            sellers
-        });
-
-    } catch (err) {
-
-        res.status(500).json({
-            buyers: 0,
-            sellers: 0
-        });
-
-    }
-
-});
-
-app.get("/api/admin/stats", async (req, res) => {
-
-    const users = await User.find();
-
-    users.forEach(u=>{
-        console.log(u.nickname, u.role);
-    });
-
-    res.json(users);
 
 });
 
@@ -541,7 +600,7 @@ app.get("/api/banner-prices", async (req,res)=>{
 
 });
 
-app.put("/api/banner-prices", async (req,res)=>{
+app.put("/api/banner-prices", verifyToken, requireRole("admin"), async (req,res)=>{
 
     let settings = await Settings.findOne();
 
@@ -577,7 +636,12 @@ app.put("/api/banner-prices", async (req,res)=>{
 
 /* SERVER */
 
-const PORT = 5001;
+/* DEPLOYMENT: most hosting platforms (Railway, Render, Heroku,
+   etc.) assign a port dynamically via the PORT environment
+   variable and route traffic to whatever port the app actually
+   listens on — a hardcoded port can silently break routing on
+   some platforms. Falls back to 5001 for local development. */
+const PORT = process.env.PORT || 5001;
 
 app.listen(PORT,"0.0.0.0",()=>{
 
@@ -649,18 +713,6 @@ app.get("/api/ads/live", async (req, res) => {
         res.status(500).json([]);
 
     }
-
-});
-
-app.get("/api/ads/live", async (req,res)=>{
-
-    const ads = await Advertisement.find({
-        status:"Approved"
-    });
-
-    console.log("LIVE ADS =", ads);
-
-    res.json(ads);
 
 });
 

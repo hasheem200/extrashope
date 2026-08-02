@@ -34,6 +34,13 @@ async function applySiteSettings() {
         const siteIcon = s.siteIcon || "🛒";
         const favicon = s.favicon || "";
 
+        setSeoTags({
+            title: document.title,
+            description: s.metaDescription || "",
+            siteName: siteName,
+            url: (s.siteUrl || window.location.origin) + window.location.pathname
+        });
+
         // 2. تحديث الـ Favicon
         if (favicon) {
             const faviconLink = document.getElementById('faviconLink');
@@ -66,7 +73,7 @@ async function applySiteSettings() {
         const logoEl = document.querySelector('.logo');
         if (logoEl) {
             if (siteIcon.startsWith('http') || siteIcon.startsWith('/')) {
-                logoEl.innerHTML = `<img src="${siteIcon}" style="height:24px;width:24px;vertical-align:middle;margin-right:8px;"> ${siteName}`;
+                logoEl.innerHTML = `<img loading="lazy" src="${siteIcon}" style="height:24px;width:24px;vertical-align:middle;margin-right:8px;"> ${siteName}`;
             } else {
                 logoEl.innerHTML = `${siteIcon} ${siteName}`;
             }
@@ -90,6 +97,9 @@ document.addEventListener('DOMContentLoaded', applySiteSettings);
 
 <link rel="stylesheet" href="style.css">
 
+<script src="js/auth-fetch.js"></script>
+<script src="js/ui-helpers.js"></script>
+<script src="js/seo.js"></script>
 </head>
 
 <body>

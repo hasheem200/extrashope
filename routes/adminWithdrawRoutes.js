@@ -3,6 +3,9 @@ const router = express.Router();
 
 const AdminWithdraw = require("../models/AdminWithdraw");
 const Settings = require("../models/Settings");
+const { verifyToken, requireRole } = require("../middleware/auth");
+
+router.use(verifyToken, requireRole("admin"));
 
 /* CREATE ADMIN WITHDRAW */
 

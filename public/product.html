@@ -22,7 +22,9 @@ async function applySiteSettings() {
         const settingsRes = await fetch("/api/settings");
         const settingsData = await settingsRes.json();
         const s = settingsData.siteSettings || {};
-     
+
+        const siteName = s.siteName || "My Site";
+        const siteIcon = s.siteIcon || "🛒";
         const favicon = s.favicon || "";
 
         // 2. تحديث الـ Favicon
@@ -45,7 +47,7 @@ async function applySiteSettings() {
         if (logoEl) {
             // إذا كان يوجد صورة في الأيقونة
             if (siteIcon.startsWith('http') || siteIcon.startsWith('/')) {
-                logoEl.innerHTML = `<img src="${siteIcon}" style="height:24px;width:24px;vertical-align:middle;margin-right:8px;"> ${siteName}`;
+                logoEl.innerHTML = `<img loading="lazy" src="${siteIcon}" style="height:24px;width:24px;vertical-align:middle;margin-right:8px;"> ${siteName}`;
             } else {
                 logoEl.innerHTML = `${siteIcon} ${siteName}`;
             }
@@ -70,6 +72,15 @@ async function applySiteSettings() {
         // 6. تحديث عنوان الصفحة
         if (product && product.name) {
             document.title = `${product.name} - ${siteName}`;
+
+            setSeoTags({
+                title: document.title,
+                description: `${product.name}${product.category ? " — " + product.category : ""} on ${siteName}`,
+                image: product.image || "",
+                siteName: siteName,
+                type: "product"
+            });
+
         } else {
             document.title = `Product - ${siteName}`;
         }
@@ -89,6 +100,9 @@ document.addEventListener('DOMContentLoaded', applySiteSettings);
 
 <link rel="stylesheet" href="style.css">
 
+<script src="js/auth-fetch.js"></script>
+<script src="js/ui-helpers.js"></script>
+<script src="js/seo.js"></script>
 </head>
 
 <body>
@@ -138,12 +152,9 @@ const product =
 products.find(p => p.id == productId);
 
 // جلب البائع
-const users =
-await fetch("/api/users")
-.then(r => r.json());
-
 const seller =
-users.find(u => u.nickname === product.seller);
+await fetch("/api/users/" + encodeURIComponent(product.seller))
+.then(r => r.ok ? r.json() : null);
 
 // هل البائع محظور؟
 const sellerBlocked =
@@ -213,7 +224,7 @@ div.innerHTML = `
 
 <div class="product-details">
 
-<img src="${product.image}">
+<img loading="lazy" src="${product.image}">
 
 <div class="details">
 
@@ -426,7 +437,7 @@ stockCount <= 0
 )
 
 {
-alert("Out Of Stock");
+toast("Out Of Stock");
 return;
 }
 
@@ -440,7 +451,7 @@ localStorage.setItem(
 JSON.stringify(cart)
 );
 
-alert(product.name + " added to cart");
+toast(product.name + " added to cart");
 
 }
 
@@ -554,7 +565,7 @@ JSON.parse(localStorage.getItem("user"));
 
 if(!user){
 
-alert("Login First");
+toast("Login First");
 
 return;
 
@@ -595,7 +606,7 @@ document.getElementById("reviewText").value="";
 
 loadReviews();
 
-alert("Review Added");
+toast("Review Added");
 
 }
 
@@ -646,7 +657,7 @@ JSON.parse(localStorage.getItem("user"));
 
 if(!user){
 
-alert("Login First");
+toast("Login First");
 
 return;
 
@@ -692,7 +703,7 @@ followers
 
 showFollowers();
 
-alert("Seller Followed ⭐");
+toast("Seller Followed ⭐");
 
 }
 

@@ -7,6 +7,9 @@
 
 <link rel="stylesheet" href="style.css">
 
+<script src="js/auth-fetch.js"></script>
+<script src="js/ui-helpers.js"></script>
+<script src="js/seo.js"></script>
 </head>
 <body>
 
@@ -282,7 +285,7 @@ document.getElementById("message").value;
 
 if(subject==="" || message===""){
 
-alert("Complete all fields");
+toast("Complete all fields");
 
 return;
 

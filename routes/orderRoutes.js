@@ -11,14 +11,32 @@ const Product = require("../models/Product");
 
 const Settings = require("../models/Settings");
 
-/* GET ORDERS */
+const { verifyToken, requireRole } = require("../middleware/auth");
 
-router.get("/", async(req,res)=>{
+/*
+  GET ORDERS
+  - Admin: sees everything (needed to manage/approve orders).
+  - Everyone else: only their own orders (matched by "customer").
+  This used to return EVERY order for EVERY customer to anyone who
+  called this endpoint — including delivered digital-goods logins
+  and passwords for products they never bought.
+*/
+
+router.get("/", verifyToken, async(req,res)=>{
 
 try{
 
-const orders =
-await Order.find();
+let orders;
+
+if(req.user.role === "admin"){
+
+orders = await Order.find();
+
+}else{
+
+orders = await Order.find({ customer: req.user.nickname });
+
+}
 
 res.json(orders);
 
@@ -30,14 +48,16 @@ res.status(500).json(err);
 
 });
 
-/* CREATE ORDER */
+/* CREATE ORDER — must be logged in; can only place an order as yourself */
 
-router.post("/", async(req,res)=>{
+router.post("/", verifyToken, async(req,res)=>{
 
 try{
 
+const body = { ...req.body, customer: req.user.nickname };
+
 const order =
-new Order(req.body);
+new Order(body);
 
 await order.save();
 
@@ -59,10 +79,12 @@ res.status(500).json(err);
 
 });
 
-/* UPDATE STATUS */
+/* UPDATE STATUS (approve/etc.) — admin only: this releases stock
+   credentials and pays out seller/admin wallets, so it must be
+   tightly controlled. */
 
 
-router.put("/:id", async(req,res)=>{
+router.put("/:id", verifyToken, requireRole("admin"), async(req,res)=>{
 
 
 try{
@@ -147,7 +169,21 @@ order.status = "Approved";
 
 await order.save();
 
+// PERFORMANCE: fetch Settings ONCE before the loop instead of
+// once per product — with a multi-item order this was hitting
+// the database repeatedly for the exact same document.
+let settings = await Settings.findOne();
 
+if (!settings) {
+
+    settings = await Settings.create({
+        commission: 10,
+        adminWallet: 0
+    });
+
+}
+
+const commission = Number(settings.commission || 10);
 
 for(const product of order.products){
 
@@ -162,20 +198,6 @@ nickname: sellerName
 if(!seller) continue;
 
 const price = Number(product.price || 0);
-
-
-let settings = await Settings.findOne();
-
-if (!settings) {
-
-    settings = await Settings.create({
-        commission: 10,
-        adminWallet: 0
-    });
-
-}
-
-const commission = Number(settings.commission || 10);
 
 const adminAmount = price * (commission / 100);
 
@@ -193,17 +215,13 @@ await seller.save();
 settings.adminWallet =
 Number(settings.adminWallet || 0) + Number(adminAmount);
 
+}
+
 await settings.save();
 
-const check = await Settings.findOne();
-
-console.log("Admin Wallet After Save =", check.adminWallet);
-
+console.log("Admin Wallet After Save =", settings.adminWallet);
 console.log("Commission =", commission);
-console.log("Admin Amount =", adminAmount);
 console.log("Admin Wallet =", settings.adminWallet);
-
-}
 
 
 
@@ -238,9 +256,9 @@ res.status(500).json(err);
 
 });
 
-/* DELETE */
+/* DELETE — admin only */
 
-router.delete("/:id", async(req,res)=>{
+router.delete("/:id", verifyToken, requireRole("admin"), async(req,res)=>{
 
 try{
 

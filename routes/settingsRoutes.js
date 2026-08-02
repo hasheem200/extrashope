@@ -5,9 +5,66 @@ const router = express.Router();
 const Settings =
 require("../models/Settings");
 
-/* GET */
+const { verifyToken, requireRole } = require("../middleware/auth");
+
+/*
+  SECURITY: Settings holds real secrets — Gmail App Password,
+  Resend API key, cloud storage API secret, and the JWT signing
+  secret itself. The old code returned the ENTIRE document on a
+  public, unauthenticated GET, and even had a "/debug-settings"
+  endpoint that dumped it a second time. Both leaked every secret
+  in this app to anyone who visited the URL.
+
+  Fix: GET / is still public (pages need siteName/logo/meta/etc.
+  to render), but secrets are stripped out before sending. A new
+  GET /full (admin-only) returns everything, for the admin panel.
+*/
+function stripSecrets(settingsDoc) {
+
+    const obj = settingsDoc.toObject ? settingsDoc.toObject() : settingsDoc;
+
+    if (obj.siteSettings) {
+
+        delete obj.siteSettings.smtpPass;
+        delete obj.siteSettings.resendApiKey;
+
+    }
+
+    delete obj.jwtSecret;
+
+    if (obj.storageSettings) {
+        delete obj.storageSettings.cloudApiSecret;
+    }
+
+    return obj;
+
+}
+
+/* GET — public, secrets stripped */
 
 router.get("/", async(req,res)=>{
+
+let settings = await Settings.findOne();
+
+if(!settings){
+
+settings = await Settings.create({
+
+commission:10,
+
+siteSettings:{}
+
+});
+
+}
+
+res.json(stripSecrets(settings));
+
+});
+
+/* GET FULL — admin only, includes secrets, used by the admin settings page */
+
+router.get("/full", verifyToken, requireRole("admin"), async(req,res)=>{
 
 let settings = await Settings.findOne();
 
@@ -29,7 +86,7 @@ res.json(settings);
 
 
 
-router.put("/site", async (req, res) => {
+router.put("/site", verifyToken, requireRole("admin"), async (req, res) => {
 
     let settings = await Settings.findOne();
 
@@ -61,15 +118,15 @@ router.put("/site", async (req, res) => {
 
         message: "Website Settings Saved",
 
-        settings
+        settings: stripSecrets(settings)
 
     });
 
 }); 
 
-/* UPDATE */
+/* UPDATE COMMISSION — admin only */
 
-router.put("/", async(req,res)=>{
+router.put("/", verifyToken, requireRole("admin"), async(req,res)=>{
 
 let settings =
 await Settings.findOne();
@@ -87,13 +144,13 @@ await settings.save();
 
 res.json({
 message:"Updated",
-settings
+settings: stripSecrets(settings)
 });
 
 });
 
 
-router.get("/admin-wallet", async (req,res)=>{
+router.get("/admin-wallet", verifyToken, requireRole("admin"), async (req,res)=>{
 
     let settings = await Settings.findOne();
 
@@ -121,12 +178,7 @@ router.get("/admin-wallet", async (req,res)=>{
 
 });
 
-router.get("/debug-settings", async (req,res)=>{
-
-const all = await Settings.find();
-
-res.json(all);
-
-});
+// NOTE: the old "/debug-settings" endpoint that dumped every secret
+// in the database with zero authentication has been removed entirely.
 
 module.exports = router;

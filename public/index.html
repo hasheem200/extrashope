@@ -21,6 +21,13 @@ async function applySiteSettings() {
         const siteIcon = s.siteIcon || "🛒";
         const favicon = s.favicon || "";
 
+        setSeoTags({
+            title: document.title,
+            description: s.metaDescription || "",
+            siteName: siteName,
+            url: (s.siteUrl || window.location.origin) + window.location.pathname
+        });
+
        
 
         // 3. تحديث عنوان الصفحة (Title)
@@ -55,6 +62,9 @@ async function applySiteSettings() {
 document.addEventListener('DOMContentLoaded', applySiteSettings);
 </script>
 <link rel="stylesheet" href="style.css">
+<script src="js/auth-fetch.js"></script>
+<script src="js/ui-helpers.js"></script>
+<script src="js/seo.js"></script>
 </head>
 
 <body>
@@ -176,7 +186,7 @@ Apply Filters
 <div class="box">
 
 <a href="advertise" class="default-ad">
-    <img src="/images/300x250.png" alt="Advertise">
+    <img loading="lazy" src="/images/300x250.png" alt="Advertise">
 </a>
 
 </div>
@@ -312,7 +322,7 @@ Login
 <div class="box">
 
 <a href="advertise" class="default-ad">
-    <img src="/images/300x250.png" alt="Advertise">
+    <img loading="lazy" src="/images/300x250.png" alt="Advertise">
 </a>
 
 </div>

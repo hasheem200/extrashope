@@ -9,6 +9,9 @@ content="width=device-width, initial-scale=1.0">
 <title>Wishlist</title>
 
 <link rel="stylesheet" href="style.css">
+<script src="js/auth-fetch.js"></script>
+<script src="js/ui-helpers.js"></script>
+<script src="js/seo.js"></script>
 </head>
 
 <body>
@@ -57,7 +60,7 @@ div.innerHTML += `
 
 <div class="cart-card">
 
-<img src="${item.image}">
+<img loading="lazy" src="${item.image}">
 
 <div>
 
@@ -108,7 +111,7 @@ localStorage.setItem(
 JSON.stringify(cart)
 );
 
-alert("Added to cart 🛒");
+toast("Added to cart 🛒");
 
 }
 

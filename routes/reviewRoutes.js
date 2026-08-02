@@ -4,14 +4,19 @@ const router = express.Router();
 const Review =
 require("../models/Review");
 
-/* ADD REVIEW */
+const { verifyToken } = require("../middleware/auth");
 
-router.post("/",async(req,res)=>{
+/* ADD REVIEW — must be logged in (prevents anonymous fake-review spam) */
+
+router.post("/", verifyToken, async(req,res)=>{
 
 try{
 
 const review =
-new Review(req.body);
+new Review({
+    ...req.body,
+    user: req.user.nickname // trust the token, not the request body
+});
 
 await review.save();
 
@@ -27,7 +32,7 @@ res.status(500).json(err);
 
 });
 
-/* GET PRODUCT REVIEWS */
+/* GET PRODUCT REVIEWS — public */
 
 router.get("/:productId",async(req,res)=>{
 

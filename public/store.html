@@ -41,7 +41,7 @@ async function applySiteSettings() {
         const logoEl = document.querySelector('.logo');
         if (logoEl) {
             if (siteIcon.startsWith('http') || siteIcon.startsWith('/')) {
-                logoEl.innerHTML = `<img src="${siteIcon}" style="height:24px;width:24px;vertical-align:middle;margin-right:8px;"> ${siteName}`;
+                logoEl.innerHTML = `<img loading="lazy" src="${siteIcon}" style="height:24px;width:24px;vertical-align:middle;margin-right:8px;"> ${siteName}`;
             } else {
                 logoEl.innerHTML = `${siteIcon} ${siteName}`;
             }
@@ -57,14 +57,22 @@ async function applySiteSettings() {
         }
 
         // 5. جلب بيانات البائع
-        const usersRes = await fetch("/api/users");
-        const users = await usersRes.json();
-        const seller = users.find(u => u.nickname === sellerNickname);
+        const usersRes = await fetch("/api/users/" + encodeURIComponent(sellerNickname));
+        const seller = usersRes.ok ? await usersRes.json() : null;
 
         // 6. تحديث عنوان الصفحة
         if (seller) {
             const storeName = seller.storeName || seller.nickname || "Store";
             document.title = `${storeName} - ${siteName}`;
+
+            setSeoTags({
+                title: document.title,
+                description: seller.storeDescription || `${storeName}'s shop on ${siteName}`,
+                image: seller.storeLogo || seller.storeBanner || "",
+                siteName: siteName,
+                type: "website"
+            });
+
         } else {
             document.title = `Store - ${siteName}`;
         }
@@ -137,6 +145,9 @@ padding:20px;
 }
 </style>
 
+<script src="js/auth-fetch.js"></script>
+<script src="js/ui-helpers.js"></script>
+<script src="js/seo.js"></script>
 </head>
 
 <body>
@@ -208,15 +219,10 @@ params.get("seller");
 async function loadSeller(){
 
 const res =
-await fetch("/api/users");
-
-const users =
-await res.json();
+await fetch("/api/users/" + encodeURIComponent(sellerNickname));
 
 const seller =
-users.find(
-u => u.nickname === sellerNickname
-);
+res.ok ? await res.json() : null;
 
 if(!seller) return;
 
@@ -237,7 +243,7 @@ document.getElementById(
 "storeAvatar"
 ).innerHTML =
 
-`<img src="${seller.storeLogo}">`;
+`<img loading="lazy" src="${seller.storeLogo}">`;
 
 }else{
 
@@ -277,7 +283,7 @@ document.getElementById(
 "storeAvatar"
 ).innerHTML =
 
-`<img src="${seller.storeLogo}"
+`<img loading="lazy" src="${seller.storeLogo}"
 style="
 width:100%;
 height:100%;

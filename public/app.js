@@ -17,6 +17,8 @@ async function loadProducts(){
 
 try{
 
+if (typeof showLoading === "function") showLoading();
+
 const res = await fetch("/api/products");
 
 const products = await res.json();
@@ -33,6 +35,16 @@ displayProducts(filteredProducts);
 }catch(err){
 
 console.log(err);
+
+// previously this failed silently — the user just saw an
+// empty page with no explanation of what went wrong
+if (typeof toast === "function") {
+    toast("Couldn't load products. Please check your connection and try again.", "error");
+}
+
+}finally{
+
+if (typeof hideLoading === "function") hideLoading();
 
 }
 
@@ -60,7 +72,7 @@ productsDiv.innerHTML += `
 
 <div class="card">
 
-<img src="${product.image}">
+<img loading="lazy" src="${product.image}">
 
 <h4>
 <a href="product.html?id=${product.id}">
@@ -109,7 +121,7 @@ allProducts.find(product => product.id == id);
 
 if(!product){
 
-alert("Product Not Found");
+toast("Product Not Found");
 
 return;
 
@@ -124,7 +136,7 @@ JSON.stringify(cart)
 
 updateCartCount();
 
-alert("Added To Cart 🛒");
+toast("Added To Cart 🛒");
 
 }
 
@@ -142,7 +154,7 @@ localStorage.setItem(
 JSON.stringify(wishlist)
 );
 
-alert(product.name + " added to wishlist ❤️");
+toast(product.name + " added to wishlist ❤️");
 
 }
 
@@ -312,6 +324,54 @@ nextSlide();
 document.getElementById("searchInput")
 .addEventListener("keyup", applyFilters);
 
+document.getElementById("searchInput")
+.addEventListener("input", showSearchSuggestions);
+
+document.addEventListener("click", (e) => {
+
+    const box = document.getElementById("searchSuggestions");
+
+    if (box && !e.target.closest(".search-box")) {
+        box.classList.remove("suggestions-visible");
+    }
+
+});
+
+function showSearchSuggestions(){
+
+    const box = document.getElementById("searchSuggestions");
+
+    if (!box) return;
+
+    const query = document.getElementById("searchInput").value.trim().toLowerCase();
+
+    if (query.length < 2) {
+        box.classList.remove("suggestions-visible");
+        box.innerHTML = "";
+        return;
+    }
+
+    const matches = allProducts
+        .filter(p => (p.name || "").toLowerCase().includes(query))
+        .slice(0, 6);
+
+    if (matches.length === 0) {
+        box.classList.remove("suggestions-visible");
+        box.innerHTML = "";
+        return;
+    }
+
+    box.innerHTML = matches.map(p => `
+        <div class="suggestion-item" onclick="window.location.href='product?id=${p.id}'">
+            <img loading="lazy" src="${p.image}">
+            <span>${p.name}</span>
+        </div>
+    `).join("");
+
+    box.classList.add("suggestions-visible");
+
+}
+
 document.getElementById("filterCategory")
 .addEventListener("change", applyFilters);
 
@@ -353,7 +413,7 @@ container.innerHTML += `
 <div class="promo-banner"
 onclick="window.location.href='product?id=${product.id}'">
 
-<img src="${product.image}">
+<img loading="lazy" src="${product.image}">
 
 <div class="promo-info">
 
@@ -658,7 +718,7 @@ function renderHero(){
 
 <div class="heroItem ${i===heroIndex?"active":""}">
 
-<img src="${product.image}">
+<img loading="lazy" src="${product.image}">
 
 <div class="heroOverlay">
 

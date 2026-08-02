@@ -17,6 +17,11 @@ const settingsSchema = new mongoose.Schema({
         default: 0
     },
 
+    jwtSecret:{
+       type:String,
+       default:""
+    },
+
     bannerPrices:{
 
     top:{
@@ -181,6 +186,9 @@ default:"ExtraShope"
 }
 
 },
+
+
+
 // ===== خارج siteSettings =====
 
 storageSettings:{

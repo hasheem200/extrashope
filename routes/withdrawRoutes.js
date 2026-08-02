@@ -4,14 +4,26 @@ const router = express.Router();
 const User = require("../models/User");
 const Withdraw = require("../models/Withdraw");
 const Notification = require("../models/Notification");
+const { verifyToken, requireRole, requireSelfOrAdmin } = require("../middleware/auth");
 
 
-/* CREATE WITHDRAW */
-router.post("/", async (req, res) => {
+/*
+  CREATE WITHDRAW — must be logged in.
+
+  CRITICAL FIX: this used to take "seller" straight from the
+  request body with no check at all. That meant anyone could send
+  { seller: "someoneElse", amount: 999 } and it would immediately
+  DEDUCT that amount from a completely different person's wallet
+  balance, with a withdraw request created in their name. Now the
+  seller is forced to be whoever is actually logged in.
+*/
+router.post("/", verifyToken, async (req, res) => {
 
   try {
 
-    const { seller, amount, method, binanceAccount } = req.body;
+    const { amount, method, binanceAccount } = req.body;
+
+    const seller = req.user.nickname;
 
     const user = await User.findOne({
       nickname: seller
@@ -77,7 +89,7 @@ router.post("/", async (req, res) => {
 
 
 /* GET ALL (ADMIN) */
-router.get("/admin/all", async (req, res) => {
+router.get("/admin/all", verifyToken, requireRole("admin"), async (req, res) => {
 
   const withdraws =
   await Withdraw.find()
@@ -88,8 +100,8 @@ router.get("/admin/all", async (req, res) => {
 });
 
 
-/* GET ALL */
-router.get("/", async (req, res) => {
+/* GET ALL — admin only */
+router.get("/", verifyToken, requireRole("admin"), async (req, res) => {
 
   const withdraws =
   await Withdraw.find()
@@ -100,8 +112,8 @@ router.get("/", async (req, res) => {
 });
 
 
-/* GET SELLER WITHDRAWS */
-router.get("/:seller", async (req, res) => {
+/* GET SELLER WITHDRAWS — owner or admin */
+router.get("/:seller", verifyToken, requireSelfOrAdmin(req => req.params.seller), async (req, res) => {
 
   const withdraws =
   await Withdraw.find({
@@ -113,8 +125,8 @@ router.get("/:seller", async (req, res) => {
 });
 
 
-/* COMPLETE */
-router.put("/:id/complete", async (req, res) => {
+/* COMPLETE — admin only (moves real money out) */
+router.put("/:id/complete", verifyToken, requireRole("admin"), async (req, res) => {
 
   const withdraw =
   await Withdraw.findById(req.params.id);
@@ -164,8 +176,8 @@ router.put("/:id/complete", async (req, res) => {
 });
 
 
-/* REJECT */
-router.put("/:id/reject", async (req, res) => {
+/* REJECT — admin only (refunds the wallet) */
+router.put("/:id/reject", verifyToken, requireRole("admin"), async (req, res) => {
 
   const withdraw =
   await Withdraw.findById(req.params.id);
@@ -214,24 +226,6 @@ router.put("/:id/reject", async (req, res) => {
     success: true,
     message: "Withdraw Rejected"
   });
-
-  await Notification.create({
-  user: withdraw.seller,
-  title: "Payment Approved",
-  message: "Your payment has been approved"
-});
-
-await Notification.create({
-  user: withdraw.seller,
-  title: "Withdraw Approved",
-  message: `$${withdraw.amount} has been approved`
-});
-
-await Notification.create({
-  user: withdraw.seller,
-  title: "Withdraw Rejected",
-  message: `$${withdraw.amount} returned to your wallet`
-});
 
 });
 

@@ -1,9 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const Wallet = require("../models/Wallet");
+const { verifyToken, requireRole, requireSelfOrAdmin } = require("../middleware/auth");
 
-/* GET SELLER WALLET */
-router.get("/:seller", async(req,res)=>{
+/* GET SELLER WALLET — owner or admin only */
+router.get("/:seller", verifyToken, requireSelfOrAdmin(req => req.params.seller), async(req,res)=>{
 
  try{
 
@@ -31,8 +32,9 @@ router.get("/:seller", async(req,res)=>{
 });
 
 
-/* ADD EARNINGS */
-router.post("/add", async(req,res)=>{
+/* ADD EARNINGS — admin only (this credits real money; should never
+   be user-triggered directly) */
+router.post("/add", verifyToken, requireRole("admin"), async(req,res)=>{
 
  try{
 
@@ -65,9 +67,9 @@ router.post("/add", async(req,res)=>{
 
 });
 
-/* PROMOTION PAYMENT */
+/* PROMOTION PAYMENT — must be the wallet owner, or admin */
 
-router.post("/promote", async(req,res)=>{
+router.post("/promote", verifyToken, async(req,res)=>{
 
 try{
 
@@ -75,6 +77,10 @@ const {
 seller,
 amount
 } = req.body;
+
+if(req.user.role !== "admin" && req.user.nickname !== seller){
+return res.status(403).json({ message:"You don't have permission to do that." });
+}
 
 const wallet =
 await Wallet.findOne({

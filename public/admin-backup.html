@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Backup &amp; Restore</title>
+
+<link rel="stylesheet" href="style.css">
+
+<style>
+
+body{
+background:#111;
+color:white;
+font-family:Arial;
+padding:20px;
+}
+
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:20px;
+}
+
+.card{
+background:#1b1b1b;
+border-radius:10px;
+padding:20px;
+max-width:600px;
+margin-bottom:20px;
+}
+
+.card h3{
+margin-top:0;
+}
+
+.card p{
+color:#ccc;
+font-size:14px;
+line-height:1.5;
+}
+
+.warning{
+background:#3a1f1f;
+border:1px solid #e53935;
+border-radius:8px;
+padding:12px 16px;
+color:#ffb3b3;
+font-size:13px;
+margin-bottom:15px;
+}
+
+input[type="text"]{
+padding:10px;
+border-radius:6px;
+border:1px solid #333;
+background:#111;
+color:white;
+width:100%;
+box-sizing:border-box;
+margin-bottom:10px;
+}
+
+input[type="file"]{
+margin-bottom:10px;
+color:white;
+}
+
+button{
+padding:10px 18px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+background:#00c853;
+color:white;
+}
+
+button.danger{
+background:#e53935;
+}
+
+button:disabled{
+opacity:.5;
+cursor:not-allowed;
+}
+
+</style>
+
+<script src="js/auth-fetch.js"></script>
+<script src="js/ui-helpers.js"></script>
+<script src="admin-protect.js"></script>
+<script src="js/seo.js"></script>
+</head>
+
+<body>
+
+<div class="header">
+
+<h2>💾 Backup &amp; Restore</h2>
+
+<button onclick="location.href='website-settings.html'">⬅ Back</button>
+
+</div>
+
+<div class="card">
+
+<h3>⬇️ Export Backup</h3>
+
+<p>
+Downloads a single JSON file containing every collection in the
+database (users, products, orders, settings, and more). Store it
+somewhere safe — it includes sensitive data like SMTP credentials
+and password hashes.
+</p>
+
+<button id="exportBtn" onclick="exportBackup()">Download Backup</button>
+
+</div>
+
+<div class="card">
+
+<h3>⬆️ Restore from Backup</h3>
+
+<div class="warning">
+⚠️ Restoring <b>replaces</b> the current data in every collection
+found in the file with what's inside it. This cannot be undone —
+export a fresh backup first if you want to keep the current data.
+</div>
+
+<input type="file" id="restoreFile" accept="application/json">
+
+<p>Type <b>RESTORE</b> below to confirm:</p>
+
+<input type="text" id="confirmText" placeholder="Type RESTORE to confirm">
+
+<button id="restoreBtn" class="danger" onclick="restoreBackup()">Restore Backup</button>
+
+</div>
+
+<script>
+
+async function exportBackup(){
+
+const btn = document.getElementById("exportBtn");
+
+btn.disabled = true;
+btn.textContent = "Preparing download...";
+
+try {
+
+    const token = localStorage.getItem("token");
+
+    const res = await fetch("/api/backup/export", {
+        headers: { "Authorization": "Bearer " + token }
+    });
+
+    if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast(data.message || "Export failed", "error");
+        return;
+    }
+
+    const blob = await res.blob();
+
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `extrashope-backup-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    URL.revokeObjectURL(url);
+
+    toast("Backup downloaded", "success");
+
+} catch (err) {
+
+    toast("Export failed: " + err.message, "error");
+
+} finally {
+
+    btn.disabled = false;
+    btn.textContent = "Download Backup";
+
+}
+
+}
+
+async function restoreBackup(){
+
+const fileInput = document.getElementById("restoreFile");
+const confirmText = document.getElementById("confirmText").value;
+
+if (!fileInput.files.length) {
+    toast("Choose a backup file first", "error");
+    return;
+}
+
+if (confirmText !== "RESTORE") {
+    toast('Type "RESTORE" exactly to confirm', "error");
+    return;
+}
+
+if (!confirm("This will REPLACE your current data. Are you absolutely sure?")) {
+    return;
+}
+
+const btn = document.getElementById("restoreBtn");
+btn.disabled = true;
+btn.textContent = "Restoring...";
+
+try {
+
+    const form = new FormData();
+    form.append("backup", fileInput.files[0]);
+    form.append("confirm", "RESTORE");
+
+    const res = await fetch("/api/backup/import", {
+        method: "POST",
+        body: form
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+
+        toast(data.message, "success");
+        console.log("Restored counts:", data.restored);
+
+    } else {
+
+        toast(data.message || "Restore failed", "error");
+        console.log("Restore errors:", data.errors);
+
+    }
+
+} catch (err) {
+
+    toast("Restore failed: " + err.message, "error");
+
+} finally {
+
+    btn.disabled = false;
+    btn.textContent = "Restore Backup";
+
+}
+
+}
+
+</script>
+
+</body>
+
+</html>

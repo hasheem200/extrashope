@@ -1,0 +1,8 @@
+These 3 files/folders were intentionally removed as dead/unused code.
+After copying this zip's contents over your project, also manually
+delete these from your server (they won't be recreated by this zip):
+
+- config/db.js       (unused, pointed at a local-only Mongo URI, never required anywhere)
+- utils/              (whole folder — contained only the old sendEmail.js stub, unused)
+- public/coupons.html (dead file, just contained the text "SAVE20"; the real
+                        coupon code is hardcoded in cart.html's JS, unrelated to this file)

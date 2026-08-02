@@ -1,23 +1,25 @@
-const res = await fetch(
-"/api/users/register",
-{
-method:"POST",
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Register</title>
+</head>
+<body>
+<script>
+/*
+  This file used to be an incomplete/broken standalone registration
+  page — no <html>/<head>/<body>, no styling, and nothing in the
+  site ever linked to it (confirmed by searching every page).
 
-headers:{
-"Content-Type":"application/json"
-},
-
-body:JSON.stringify({
-
-nickname,
-email,
-password
-
-})
-
-}
-);
-
-const data = await res.json();
-
-alert(data.message);
+  The real, fully working registration flow already lives inside
+  login.html (it has both Login and Register on one page, wired to
+  the same /api/users/register endpoint this file was calling).
+  Rather than duplicate that working form here, this now just sends
+  anyone who lands on this URL (an old bookmark, a stray link, etc.)
+  straight to the real page instead of a broken one.
+*/
+window.location.replace("/login");
+</script>
+</body>
+</html>

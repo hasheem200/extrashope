@@ -122,6 +122,9 @@ border-radius:8px;
 
 </style>
 
+<script src="js/auth-fetch.js"></script>
+<script src="js/ui-helpers.js"></script>
+<script src="js/seo.js"></script>
 </head>
 
 <body>
@@ -135,6 +138,7 @@ border-radius:8px;
 <nav>
 
 <a href="uploads-manage">🗂️ File Manager</a>
+<a href="admin-backup">💾 Backup &amp; Restore</a>
 <a href="admin" class="back">
 
 ⬅ Back To Admin
@@ -299,7 +303,7 @@ border-radius:8px;
 
 async function loadSettings() {
     try {
-        const res = await fetch("/api/settings");
+        const res = await fetch("/api/settings/full");
         const data = await res.json();
 
         if (!data.siteSettings) return;

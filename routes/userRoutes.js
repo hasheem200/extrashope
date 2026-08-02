@@ -8,6 +8,10 @@ const bcrypt = require("bcryptjs");
 
 const User = require("../models/User");
 
+const getJwtSecret = require("../config/jwtSecret");
+
+const { verifyToken, requireRole, requireSelfOrAdmin } = require("../middleware/auth");
+
 /* REGISTER */
 
 router.post("/register", async(req,res)=>{
@@ -35,6 +39,13 @@ message:"User already exists"
 const hashedPassword =
 await bcrypt.hash(password,10);
 
+// SECURITY: never trust "role" from the request body — anyone
+// could have registered themselves as role:"admin" before this
+// fix. Only "buyer" or "seller" may be self-selected at signup;
+// admin accounts must be promoted by an existing admin.
+const allowedSelfRoles = ["buyer", "seller"];
+const safeRole = allowedSelfRoles.includes(role) ? role : "buyer";
+
 const user =
 new User({
 
@@ -44,7 +55,7 @@ email,
 
 password: hashedPassword,
 
-role: role || "buyer",
+role: safeRole,
 
 wallet:0,
 
@@ -87,7 +98,7 @@ message:"Please enter email and password"
 }
 
 const user =
-await User.findOne({ email });
+await User.findOne({ email }).select("+password");
 
 if(!user){
 
@@ -127,15 +138,18 @@ reason:user.blockReason
 
 }
 
+const secret = await getJwtSecret();
+
 const token =
 jwt.sign(
 
 {
 id:user._id,
+nickname:user.nickname,
 role:user.role
 },
 
-"SECRETKEY",
+secret,
 
 {
 expiresIn:"7d"
@@ -177,9 +191,9 @@ message:err.message
 
 });
 
-/* GET USERS */
+/* GET USERS — admin only (full user list, sensitive) */
 
-router.get("/", async(req,res)=>{
+router.get("/", verifyToken, requireRole("admin"), async(req,res)=>{
 
 try{
 
@@ -196,7 +210,7 @@ res.status(500).json(err);
 
 });
 
-/* GET SINGLE USER */
+/* GET SINGLE USER — public profile (password already excluded by schema) */
 
 router.get("/:nickname", async(req,res)=>{
 
@@ -228,9 +242,6 @@ res.status(500).json(err);
 router.get("/wallet/:nickname", async(req,res)=>{
 
 try{
-
-const User =
-require("../models/User");
 
 const user =
 await User.findOne({
@@ -289,9 +300,13 @@ res.status(500).json(err);
 });
 
 
+/* UPDATE STORE — must be the owner (or an admin) */
 
-
-router.put("/store/:nickname", async(req,res)=>{
+router.put(
+"/store/:nickname",
+verifyToken,
+requireSelfOrAdmin(req => req.params.nickname),
+async(req,res)=>{
 
 try{
 
@@ -335,9 +350,9 @@ res.status(500).json(err);
 
 });
 
-/* CHANGE USER ROLE */
+/* CHANGE USER ROLE — admin only (this is privilege escalation, must be locked down) */
 
-router.put("/:id/role", async(req,res)=>{
+router.put("/:id/role", verifyToken, requireRole("admin"), async(req,res)=>{
 
 try{
 
@@ -369,13 +384,9 @@ res.status(500).json(err);
 
 });
 
-/* BLOCK / UNBLOCK USER */
+/* BLOCK / UNBLOCK USER — admin only */
 
-/* BLOCK / UNBLOCK USER */
-
-router.put("/:id/block", async (req, res) => {
- 
-    console.log(req.body);
+router.put("/:id/block", verifyToken, requireRole("admin"), async (req, res) => {
 
 try{
 
@@ -446,9 +457,9 @@ res.status(500).json(err);
 
 });
 
-/* DELETE USER */
+/* DELETE USER — admin only */
 
-router.delete("/:id", async(req,res)=>{
+router.delete("/:id", verifyToken, requireRole("admin"), async(req,res)=>{
 
 try{
 

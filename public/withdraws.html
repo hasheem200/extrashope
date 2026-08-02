@@ -6,6 +6,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Withdraw Requests</title>
 <link rel="stylesheet" href="style.css">
+<script src="js/auth-fetch.js"></script>
+<script src="js/ui-helpers.js"></script>
+<script src="js/seo.js"></script>
 </head>
 
 <body>
@@ -69,7 +72,7 @@ async function sendWithdrawRequest(){
   );
 
   if(!user){
-    alert("Please login first");
+    toast("Please login first");
     return false;
   }
 
@@ -92,7 +95,7 @@ async function sendWithdrawRequest(){
   ).value;
 
   if(!amount){
-    alert("Enter amount");
+    toast("Enter amount");
     return false;
   }
 
@@ -118,7 +121,7 @@ async function sendWithdrawRequest(){
 
   if(data.success){
 
-    alert(
+    toast(
       "Withdraw Request Sent 💸"
     );
 
@@ -128,7 +131,7 @@ async function sendWithdrawRequest(){
 
   }else{
 
-    alert(
+    toast(
       data.message
     );
 
@@ -200,7 +203,7 @@ async function sendWithdrawRequest(){
   const user = JSON.parse(localStorage.getItem("user"));
 
   if(!user){
-    alert("Please login first");
+    toast("Please login first");
     return;
   }
 
@@ -211,7 +214,7 @@ async function sendWithdrawRequest(){
   const binanceAccount = document.getElementById("binanceAccount")?.value;
 
   if(!amount){
-    alert("Enter amount");
+    toast("Enter amount");
     return;
   }
 
@@ -231,10 +234,10 @@ async function sendWithdrawRequest(){
   const data = await res.json();
 
   if(data.success){
-    alert("Withdraw Request Sent 💸");
+    toast("Withdraw Request Sent 💸");
     loadWithdraws();
   }else{
-    alert(data.message);
+    toast(data.message);
   }
 }
 
