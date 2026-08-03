@@ -1,69 +1,21 @@
-Fixed every console error you posted:
+1 file changed: public/website-settings.html
 
-1) "Cannot read properties of undefined (reading 'classList')
-   at showSlide (app.js:284)"
+Made the "Upload Preset" field bulletproof against display issues:
+- Added explicit type="text"
+- Added inline styles forcing visible black text on a white
+  background (color, background, and -webkit-text-fill-color all
+  set explicitly) so no page-wide CSS rule (dark mode, autofill
+  styling, etc.) can make the typed text invisible.
+- Everything else (id, save/load logic, backend) was already
+  re-verified working in the previous round — full round-trip
+  tested again just now (save -> database -> load back) and it
+  passes.
 
-   Root cause: app.js queried for elements with class ".slide"
-   ONCE when the script first loaded — before anything with that
-   class existed (nothing in the whole codebase ever actually
-   creates a ".slide" element). setInterval then kept calling
-   showSlide() against that permanently-empty, frozen list every
-   4 seconds forever, crashing every time.
-   Fixed: now queries fresh each time and safely does nothing if
-   there's nothing to slide through. No more crash, no more
-   spammed console errors.
-
-2) "Cannot set properties of null (setting 'innerHTML') at
-   loadPromotionHero (ads.js:357)"
-
-   Root cause: this function targets a #promotionHero element that
-   never existed anywhere in index.html. Added it now (right above
-   the sponsored banner section) — the CSS for it (.hero-banner)
-   already existed and was just never used.
-   Also fixed while I was in there: the code was filtering on
-   "p.promotedUntil" and reading "item.productId" / "item.cover" —
-   none of those fields exist on your actual Product model. The
-   real fields are "promotionEnd", "id", and "image". So even once
-   the element existed, this would never have shown anything. Now
-   it correctly shows a promoted product's banner when one is
-   active.
-
-3) /favicon.ico 404
-
-   There was no favicon.ico file in your project at all. Generated
-   a proper one (simple branded icon, green background matching
-   your buttons, size 32x32) at public/favicon.ico.
-
-4) "...vecteezy_3d-alphabet-...png" 404 (repeated many times)
-
-   This is your Site Icon / Favicon image, referenced from Website
-   Settings. The FILE ITSELF is missing from your server's
-   public/manage folder — it must have been deleted or lost at
-   some point. This isn't something code can fix; the database
-   still points to a real filename, but the actual image data is
-   gone. You'll need to re-upload a site icon image in Admin ->
-   Website Settings -> Site Icon / Favicon.
-   What I DID fix: if that image (or any site logo) fails to load,
-   the site now just hides the broken image instead of showing an
-   ugly broken-image icon next to your site name.
-
-5) Product image 404s (1785078186075.jpg, 1784910379264.jpg, etc.)
-
-   Same situation as #4 — these are uploaded product photos that
-   are missing from public/uploads on your server, while the
-   database still references their filenames. Also not fixable in
-   code (I don't have the original image data to restore). What I
-   DID fix: product images across the site now show a clean "Image
-   not available" placeholder instead of a broken-image icon when
-   this happens (new file: public/images/no-image.png).
-
-6) Bonus (found while fixing #2): there were TWO elements with the
-   same id="topLeaderboard" in index.html — invalid HTML that could
-   cause confusing rendering. Removed the duplicate.
-
-WHAT YOU STILL NEED TO DO (can't be fixed by code):
-- Re-upload your Site Icon/Favicon in Website Settings (the old
-  file is gone from the server).
-- Check which products have broken images (any product whose photo
-  now shows the gray placeholder) and re-upload their photos via
-  Edit Product.
+If the field STILL doesn't show what you type after this, it's
+worth checking in the browser:
+1. Hard refresh the page (Ctrl+Shift+R) to rule out cached CSS/JS
+   from before this fix.
+2. Right-click the field -> Inspect -> check the Styles panel for
+   any rule still overriding color (a browser extension or
+   something outside this file could theoretically still interfere,
+   though that would be unusual).
