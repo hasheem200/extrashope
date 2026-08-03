@@ -202,6 +202,59 @@ user.nickname,
 
 }
 
+/*
+  BUG FIX: this function was being called (see bottom of this
+  script) but never actually existed anywhere — meaning it threw
+  "loadSettings is not defined" the moment the page loaded, and
+  the form always started blank. Worse, because nothing loaded the
+  seller's CURRENT storeLogo/storeBanner, saveSettings() below had
+  no way to know what they were — every save silently wiped out
+  the existing logo/banner unless you happened to re-upload both
+  every single time.
+*/
+
+let currentLogoUrl = "";
+let currentBannerUrl = "";
+
+async function loadSettings(){
+
+const user =
+JSON.parse(
+localStorage.getItem("user")
+);
+
+if(!user) return;
+
+document.getElementById("shopUrl").value =
+window.location.origin + "/store?seller=" + user.nickname;
+
+try{
+
+const res =
+await fetch("/api/users/store/" + encodeURIComponent(user.nickname));
+
+if(!res.ok) return;
+
+const store =
+await res.json();
+
+document.getElementById("storeName").value =
+store.storeName || "";
+
+document.getElementById("storeDescription").value =
+store.storeDescription || "";
+
+currentLogoUrl = store.storeLogo || "";
+currentBannerUrl = store.storeBanner || "";
+
+}catch(err){
+
+console.log("Could not load current store settings:", err);
+
+}
+
+}
+
 async function saveSettings(){
 
 const user =
@@ -209,11 +262,12 @@ JSON.parse(
 localStorage.getItem("user")
 );
 
-let logoUrl =
-localStorage.getItem("storeLogo") || "";
+// default to whatever was already saved — only overwritten below
+// if a new file was actually chosen, so editing just the name/
+// description no longer erases the existing logo/banner
+let logoUrl = currentLogoUrl;
 
-let bannerUrl =
-localStorage.getItem("storeBanner") || "";
+let bannerUrl = currentBannerUrl;
 
 /* LOGO */
 
@@ -244,8 +298,21 @@ body:formData
 const result =
 await upload.json();
 
+// BUG FIX: if this upload failed, "result.image" is undefined —
+// used to overwrite logoUrl with that undefined value (wiping out
+// the existing logo, since JSON.stringify drops undefined keys
+// and the backend then treats it as blank). Now it keeps the
+// current logo and tells the seller the upload didn't work.
+if(!upload.ok || !result.image){
+
+toast(result.message || "Logo upload failed — keeping your current logo.", "error");
+
+}else{
+
 logoUrl =
 result.image;
+
+}
 
 }
 
@@ -278,8 +345,18 @@ body:formData
 const result =
 await upload.json();
 
+// Same fix as the logo above — a failed upload no longer wipes
+// out the existing banner.
+if(!upload.ok || !result.image){
+
+toast(result.message || "Banner upload failed — keeping your current banner.", "error");
+
+}else{
+
 bannerUrl =
 result.image;
+
+}
 
 }
 
@@ -325,6 +402,11 @@ bannerUrl
 
 const data =
 await res.json();
+
+if(res.ok){
+    currentLogoUrl = logoUrl;
+    currentBannerUrl = bannerUrl;
+}
 
 toast(data.message);
 

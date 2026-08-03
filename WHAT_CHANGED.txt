@@ -1,0 +1,59 @@
+9 files changed this round — deep review of the entire image
+upload/save system.
+
+BACKEND:
+1. routes/settingsRoutes.js
+   - (carried over) Storage Settings save/load location fix.
+2. routes/uploadRoutes.js
+   - (carried over) Upload Preset now actually sent to Cloudinary.
+   - Removed dead unused code.
+
+FRONTEND:
+3. public/website-settings.html
+   - (carried over) Added missing Upload Preset field + fixed load bug.
+
+4. public/seller-shop-settings.html  ⚠️ MOST IMPORTANT FIX
+   - loadSettings() was called but never existed anywhere — the page
+     threw an error on load and your Shop Name/Description/Logo/
+     Banner never populated from your saved data.
+   - Because of that, saving your shop settings WITHOUT re-uploading
+     a new logo/banner was silently DELETING your existing logo and
+     banner. Fixed: existing logo/banner is now preserved unless you
+     actually upload a new one.
+   - Also: if a new logo/banner upload fails, it no longer wipes out
+     the existing one — it keeps the old one and shows an error.
+
+5. public/checkout.html
+   - If the payment-proof screenshot failed to upload, the order
+     used to get submitted anyway with no proof attached — buyer
+     saw "success" but the seller/admin had nothing to verify.
+     Now it stops and shows an error instead.
+
+6. public/checkout2.html (advertisement/banner checkout)
+   - Same fix as above, for both the payment-proof upload AND the
+     banner-image upload (two separate uploads on this page).
+
+7. public/add-product.html
+   - If the product image upload failed, the product still got
+     created anyway with no image and no explanation. Now it stops
+     and shows an error.
+
+8. public/seller-add-product.html
+   - Same fix as above, plus: this page never even checked whether
+     you'd selected an image before submitting — now it does.
+
+9. public/uploads-manage.html (File Manager)
+   - It used to show "Uploaded Successfully" even when the upload
+     was rejected (e.g. blocked file type). Now it actually checks.
+
+Also: public/coupons.html deleted again (dead file — if you skipped
+deleting it last time, delete it now: public/coupons.html)
+
+IMPORTANT NOTE FOR YOU: while testing all of this, I found (and
+fixed on my end) that a cleanup command I ran had accidentally
+deleted 107 of your real product images from my working copy. I
+caught it, restored every single one from your original upload, and
+verified all 153 files in public/uploads match byte-for-byte before
+building this zip. Nothing here touches your public/uploads folder
+at all — you don't need to do anything about this, just flagging it
+for transparency.

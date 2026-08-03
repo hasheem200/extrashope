@@ -401,6 +401,17 @@ async function addProduct(){
 const file =
 document.getElementById("imageFile").files[0];
 
+// BUG FIX: this page never checked whether a file was even
+// selected — clicking "Add Product" with no image chosen would
+// silently create a product with no image.
+if(!file){
+
+toast("Please select an image first.", "error");
+
+return;
+
+}
+
 const formData =
 new FormData();
 
@@ -417,6 +428,17 @@ body:formData
 
 const uploadData =
 await uploadRes.json();
+
+// BUG FIX: also never checked whether the upload actually
+// succeeded — a rejected/failed upload still let the product get
+// created anyway, just silently missing its image.
+if(!uploadRes.ok || !uploadData.image){
+
+toast(uploadData.message || "Image upload failed. Please try again.", "error");
+
+return;
+
+}
 
 const image =
 uploadData.image;

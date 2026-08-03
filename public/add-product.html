@@ -392,6 +392,19 @@ body:formData
 const uploadData =
 await uploadRes.json();
 
+// BUG FIX: this used to proceed regardless of whether the upload
+// actually succeeded. If it failed (wrong file type, size limit,
+// expired login, network error) the product still got created —
+// just silently with no image and no explanation. Now it stops
+// and tells the seller exactly what went wrong instead.
+if(!uploadRes.ok || !uploadData.image){
+
+toast(uploadData.message || "Image upload failed. Please try again.", "error");
+
+return;
+
+}
+
 const image =
 uploadData.image;
 

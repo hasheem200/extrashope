@@ -273,6 +273,17 @@ body:formData
 const uploadData =
 await uploadRes.json();
 
+// BUG FIX: this used to proceed even if the payment proof upload
+// failed, submitting an ad request with no proof of payment for
+// the admin to verify.
+if(!uploadRes.ok || !uploadData.image){
+
+toast(uploadData.message || "Couldn't upload payment proof. Please try again.", "error");
+
+return;
+
+}
+
 const bannerForm =
 new FormData();
 
@@ -301,6 +312,17 @@ await fetch(
 
 const bannerData =
 await bannerUpload.json();
+
+// BUG FIX: same issue for the banner image itself — a failed
+// upload here used to still submit the ad, just with a missing
+// banner image and no explanation to the advertiser.
+if(!bannerUpload.ok || !bannerData.image){
+
+toast(bannerData.message || "Couldn't upload the banner image. Please try again.", "error");
+
+return;
+
+}
 
 /* CART */
 

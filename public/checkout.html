@@ -256,6 +256,18 @@ body:formData
 const uploadData =
 await uploadRes.json();
 
+// BUG FIX: this used to proceed to place the order even if the
+// payment proof upload failed — the buyer would see "Order
+// Submitted" with no proof actually attached, and the seller/
+// admin would have no way to verify payment was ever made.
+if(!uploadRes.ok || !uploadData.image){
+
+toast(uploadData.message || "Couldn't upload payment proof. Please try again.", "error");
+
+return;
+
+}
+
 /* CART */
 
 const cart =

@@ -265,7 +265,7 @@ border-radius:8px;
 <input id="cloudApiSecret">
 
 <label>Upload Preset (Optional)</label>
-    
+<input id="cloudPreset" placeholder="e.g. ml_default (leave blank if using signed uploads)">
 </div>
 
 
@@ -332,25 +332,31 @@ async function loadSettings() {
         document.getElementById('headHtml').value = s.headHtml || '';
         document.getElementById('footerHtml').value = s.footerHtml || '';
        
+        // BUG FIX: storageSettings is a top-level field in the API
+        // response (a sibling of siteSettings), not nested inside
+        // it — "s.storageSettings" was always undefined, so these
+        // fields never actually populated with the saved values.
+        const storage = data.storageSettings || {};
+
         if (document.getElementById("storageType"))
     document.getElementById("storageType").value =
-    s.storageSettings?.storageType || "local";
+    storage.storageType || "local";
 
 if (document.getElementById("cloudName"))
     document.getElementById("cloudName").value =
-    s.storageSettings?.cloudName || "";
+    storage.cloudName || "";
 
 if (document.getElementById("cloudApiKey"))
     document.getElementById("cloudApiKey").value =
-    s.storageSettings?.cloudApiKey || "";
+    storage.cloudApiKey || "";
 
 if (document.getElementById("cloudApiSecret"))
     document.getElementById("cloudApiSecret").value =
-    s.storageSettings?.cloudApiSecret || "";
+    storage.cloudApiSecret || "";
 
 if (document.getElementById("cloudPreset"))
     document.getElementById("cloudPreset").value =
-    s.storageSettings?.cloudPreset || "";
+    storage.cloudPreset || "";
 
         
         console.log('✅ Settings loaded successfully');

@@ -468,6 +468,7 @@ new FormData();
 
 form.append("file",input.files[0]);
 
+const res =
 await fetch("/api/file-manager/upload?dir=" + encodeURIComponent(currentDir),{
 
 method:"POST",
@@ -476,7 +477,20 @@ body:form
 
 });
 
+const data = await res.json();
+
 input.value="";
+
+// BUG FIX: this used to show "Uploaded Successfully" and refresh
+// the file list even when the upload was rejected (e.g. blocked
+// file type, size limit) — the error was silently swallowed.
+if(!res.ok || !data.success){
+
+toast(data.message || "Upload failed", "error");
+
+return;
+
+}
 
 loadFiles();
 

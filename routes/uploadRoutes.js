@@ -6,6 +6,9 @@ const multer = require("multer");
 
 const sharp = require("sharp");
 
+const cloudinary = require("cloudinary").v2;
+
+
 const Settings = require("../models/Settings");
 
 const path = require("path");
@@ -102,34 +105,55 @@ if (ext === ".gif") {
 
 const settings = await Settings.findOne();
 
-let imageUrl =
-"/uploads/" + filename;
+let imageUrl;
 
-if(
-settings &&
-settings.siteSettings &&
-settings.siteSettings.uploadsBaseUrl &&
-settings.siteSettings.uploadsBaseUrl.trim() !== ""
-){
+if (settings?.storageSettings?.storageType === "cloudinary") {
 
-let base =
-settings.siteSettings.uploadsBaseUrl.trim();
+    cloudinary.config({
+        cloud_name: settings.storageSettings.cloudName,
+        api_key: settings.storageSettings.cloudApiKey,
+        api_secret: settings.storageSettings.cloudApiSecret
+    });
 
-if(!base.endsWith("/")){
+    const uploadOptions = {
+        folder: "extrashope"
+    };
 
-base += "/";
+    // Upload Preset is optional — only include it if the admin
+    // actually set one. This was being saved in Settings but never
+    // passed to Cloudinary, so it had no effect until now.
+    if (settings.storageSettings.cloudPreset && settings.storageSettings.cloudPreset.trim() !== "") {
+        uploadOptions.upload_preset = settings.storageSettings.cloudPreset.trim();
+    }
 
-}
+    const uploaded = await cloudinary.uploader.upload(outputPath, uploadOptions);
 
-imageUrl =
-base + filename;
+    // حذف النسخة المحلية بعد نجاح الرفع
+    fs.unlinkSync(outputPath);
 
+    imageUrl = uploaded.secure_url;
+
+} else {
+
+    imageUrl = "/uploads/" + filename;
+
+    if (
+        settings?.siteSettings?.uploadsBaseUrl &&
+        settings.siteSettings.uploadsBaseUrl.trim() !== ""
+    ) {
+
+        let base = settings.siteSettings.uploadsBaseUrl.trim();
+
+        if (!base.endsWith("/")) {
+            base += "/";
+        }
+
+        imageUrl = base + filename;
+    }
 }
 
 res.json({
-
-image:imageUrl
-
+    image: imageUrl
 });
 
 }catch(err){
@@ -227,4 +251,11 @@ message:"Deleted"
 });
 
 });
+
+// NOTE: an unused "createStorage()" helper (built for
+// multer-storage-cloudinary, never actually called by anything in
+// this file or exported) used to sit here — removed as dead code.
+// The real upload flow above already handles both local and
+// Cloudinary storage directly.
+
 module.exports = router;
