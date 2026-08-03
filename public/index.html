@@ -28,6 +28,8 @@ async function applySiteSettings() {
             url: (s.siteUrl || window.location.origin) + window.location.pathname
         });
 
+        injectCustomHtml(s.headHtml, s.footerHtml);
+
        
 
         // 3. تحديث عنوان الصفحة (Title)
@@ -213,8 +215,8 @@ Apply Filters
 
 <!-- BANNER -->
 
-
-
+<!-- Promoted Product Hero Banner (filled by loadPromotionHero() in ads.js) -->
+<div id="promotionHero"></div>
 
 <!-- Sponsored Hero Banner -->
 
@@ -248,8 +250,6 @@ Apply Filters
 </div>
 
 <div id="searchSuggestions"></div>
-
-<div id="topLeaderboard" style="margin:20px auto;text-align:center;"></div>
 
 <!-- TOP LEADERBOARD -->
 

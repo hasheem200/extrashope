@@ -72,7 +72,7 @@ productsDiv.innerHTML += `
 
 <div class="card">
 
-<img loading="lazy" src="${product.image}">
+<img loading="lazy" src="${product.image}" onerror="this.onerror=null;this.src='/images/no-image.png';">
 
 <h4>
 <a href="product.html?id=${product.id}">
@@ -270,10 +270,20 @@ document.body.classList.add("dark");
 
 let currentSlide = 0;
 
+// BUG FIX: this used to capture the ".slide" elements ONCE into a
+// const at script-load time, before anything with that class
+// existed in the page (nothing in the whole codebase ever creates
+// a ".slide" element). setInterval then kept calling showSlide()
+// against that permanently-empty, stale list forever, throwing
+// "Cannot read properties of undefined (reading 'classList')"
+// every 4 seconds. Now it queries fresh each call and safely does
+// nothing if there's nothing to slide.
+function showSlide(index){
+
 const slides =
 document.querySelectorAll(".slide");
 
-function showSlide(index){
+if(slides.length === 0) return;
 
 slides.forEach(slide => {
 
@@ -281,11 +291,18 @@ slide.classList.remove("active");
 
 });
 
-slides[index].classList.add("active");
+if(slides[index]){
+    slides[index].classList.add("active");
+}
 
 }
 
 function nextSlide(){
+
+const slides =
+document.querySelectorAll(".slide");
+
+if(slides.length === 0) return;
 
 currentSlide++;
 
@@ -300,6 +317,11 @@ showSlide(currentSlide);
 }
 
 function prevSlide(){
+
+const slides =
+document.querySelectorAll(".slide");
+
+if(slides.length === 0) return;
 
 currentSlide--;
 
@@ -413,7 +435,7 @@ container.innerHTML += `
 <div class="promo-banner"
 onclick="window.location.href='product?id=${product.id}'">
 
-<img loading="lazy" src="${product.image}">
+<img loading="lazy" src="${product.image}" onerror="this.onerror=null;this.src='/images/no-image.png';">
 
 <div class="promo-info">
 
@@ -718,7 +740,7 @@ function renderHero(){
 
 <div class="heroItem ${i===heroIndex?"active":""}">
 
-<img loading="lazy" src="${product.image}">
+<img loading="lazy" src="${product.image}" onerror="this.onerror=null;this.src='/images/no-image.png';">
 
 <div class="heroOverlay">
 

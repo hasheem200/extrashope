@@ -27,6 +27,8 @@ async function applySiteSettings() {
         const siteIcon = s.siteIcon || "🛒";
         const favicon = s.favicon || "";
 
+        injectCustomHtml(s.headHtml, s.footerHtml);
+
         // 2. تحديث الـ Favicon
         if (favicon) {
             const faviconLink = document.getElementById('faviconLink');
@@ -47,7 +49,7 @@ async function applySiteSettings() {
         if (logoEl) {
             // إذا كان يوجد صورة في الأيقونة
             if (siteIcon.startsWith('http') || siteIcon.startsWith('/')) {
-                logoEl.innerHTML = `<img loading="lazy" src="${siteIcon}" style="height:24px;width:24px;vertical-align:middle;margin-right:8px;"> ${siteName}`;
+                logoEl.innerHTML = `<img loading="lazy" src="${siteIcon}" style="height:24px;width:24px;vertical-align:middle;margin-right:8px;" onerror="this.style.display='none';"> ${siteName}`;
             } else {
                 logoEl.innerHTML = `${siteIcon} ${siteName}`;
             }
