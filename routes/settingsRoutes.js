@@ -100,24 +100,15 @@ router.put("/site", verifyToken, requireRole("admin"), async (req, res) => {
 
         ...(settings.siteSettings || {}),
 
-        ...(req.body.siteSettings || {})
+        ...(req.body.siteSettings || {}),
 
-    };
+        storageSettings: {
 
-    // BUG FIX: storageSettings is a top-level sibling field on the
-    // Settings schema (see models/Settings.js — it's explicitly
-    // marked "outside siteSettings" there), but this route used to
-    // nest it inside siteSettings instead. uploadRoutes.js reads
-    // storage config from the top-level field, so every Storage
-    // Settings change made from the admin panel (storage type,
-    // Cloudinary credentials, Upload Preset) was being saved to a
-    // location nothing ever actually read from — it silently had
-    // no effect.
-    settings.storageSettings = {
+            ...(settings.siteSettings?.storageSettings || {}),
 
-        ...(settings.storageSettings || {}),
+            ...(req.body.storageSettings || {})
 
-        ...(req.body.storageSettings || {})
+        }
 
     };
 

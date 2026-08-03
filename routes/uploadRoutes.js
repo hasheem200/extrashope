@@ -7,6 +7,7 @@ const multer = require("multer");
 const sharp = require("sharp");
 
 const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
 
 const Settings = require("../models/Settings");
@@ -115,18 +116,9 @@ if (settings?.storageSettings?.storageType === "cloudinary") {
         api_secret: settings.storageSettings.cloudApiSecret
     });
 
-    const uploadOptions = {
+    const uploaded = await cloudinary.uploader.upload(outputPath, {
         folder: "extrashope"
-    };
-
-    // Upload Preset is optional — only include it if the admin
-    // actually set one. This was being saved in Settings but never
-    // passed to Cloudinary, so it had no effect until now.
-    if (settings.storageSettings.cloudPreset && settings.storageSettings.cloudPreset.trim() !== "") {
-        uploadOptions.upload_preset = settings.storageSettings.cloudPreset.trim();
-    }
-
-    const uploaded = await cloudinary.uploader.upload(outputPath, uploadOptions);
+    });
 
     // حذف النسخة المحلية بعد نجاح الرفع
     fs.unlinkSync(outputPath);
@@ -252,10 +244,60 @@ message:"Deleted"
 
 });
 
-// NOTE: an unused "createStorage()" helper (built for
-// multer-storage-cloudinary, never actually called by anything in
-// this file or exported) used to sit here — removed as dead code.
-// The real upload flow above already handles both local and
-// Cloudinary storage directly.
+async function createStorage() {
 
+    const settings = await Settings.findOne();
+
+    // Local Uploads
+    if (
+        !settings ||
+        !settings.storageSettings ||
+        settings.storageSettings.storageType !== "cloudinary"
+    ) {
+
+        return multer.diskStorage({
+
+            destination: function (req, file, cb) {
+
+                cb(null, "public/uploads");
+
+            },
+
+            filename: function (req, file, cb) {
+
+                cb(null, Date.now() + path.extname(file.originalname));
+
+            }
+
+        });
+
+    }
+
+    // Cloudinary
+
+    cloudinary.config({
+
+        cloud_name: settings.storageSettings.cloudName,
+
+        api_key: settings.storageSettings.cloudApiKey,
+
+        api_secret: settings.storageSettings.cloudApiSecret
+
+    });
+
+    return new CloudinaryStorage({
+
+        cloudinary,
+
+        params: {
+
+            folder: "extrashope",
+
+            resource_type: "image"
+
+        }
+
+    });
+
+}
 module.exports = router;

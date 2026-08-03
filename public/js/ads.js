@@ -333,35 +333,21 @@ async function loadPromotionHero(){
 
     const now = Date.now();
 
-    // BUG FIX: this was filtering on "p.promotedUntil", a field
-    // that doesn't exist on the Product schema — the actual field
-    // is "promotionEnd" (set when a seller promotes a product).
-    // Combined with the missing #promotionHero element below, this
-    // meant the hero banner never showed a promoted product, ever.
     const promoted = products.filter(p =>
-        p.promoted &&
-        p.promotionEnd &&
-        new Date(p.promotionEnd).getTime() > now
+        p.promotedUntil &&
+        new Date(p.promotedUntil).getTime() > now
     );
 
     const box = document.getElementById("promotionHero");
-
-    // BUG FIX: #promotionHero didn't exist anywhere in index.html
-    // (added now), so this was always null and crashed on the very
-    // next line ("Cannot set properties of null").
-    if(!box) return;
 
     if(promoted.length > 0){
 
         const item = promoted[0];
 
-        // BUG FIX: "item.productId" and "item.cover" don't exist on
-        // the Product schema — the actual fields are "id" and
-        // "image".
         box.innerHTML = `
         <div class="hero-banner">
-            <a href="product?id=${item.id}">
-                <img loading="lazy" src="${item.image}" alt="${item.name}">
+            <a href="product.html?id=${item.productId}">
+                <img src="${item.cover}" alt="${item.name}">
             </a>
         </div>
         `;
@@ -370,8 +356,8 @@ async function loadPromotionHero(){
 
         box.innerHTML = `
         <div class="hero-banner advertise-banner">
-            <a href="promotions">
-                <img loading="lazy" src="/images/promotion-banner.png" alt="Advertise">
+            <a href="promotions.html">
+                <img src="/images/promotion-banner.png" alt="Advertise">
             </a>
         </div>
         `;
@@ -604,7 +590,7 @@ if (s.siteIcon) {
     if (iconEl) {
         // إذا كان رابط صورة
         if (s.siteIcon.startsWith('http') || s.siteIcon.startsWith('/')) {
-            iconEl.innerHTML = `<img loading="lazy" src="${s.siteIcon}" style="height:24px;width:24px;vertical-align:middle;" onerror="this.style.display='none';">`;
+            iconEl.innerHTML = `<img src="${s.siteIcon}" style="height:24px;width:24px;vertical-align:middle;">`;
         } else {
             iconEl.textContent = s.siteIcon; // إيموجي
         }

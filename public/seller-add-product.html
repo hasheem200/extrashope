@@ -41,8 +41,6 @@ async function applySiteSettings() {
             url: (s.siteUrl || window.location.origin) + window.location.pathname
         });
 
-        injectCustomHtml(s.headHtml, s.footerHtml);
-
         // 2. تحديث الـ Favicon
         if (favicon) {
             const faviconLink = document.getElementById('faviconLink');
@@ -75,7 +73,7 @@ async function applySiteSettings() {
         const logoEl = document.querySelector('.logo');
         if (logoEl) {
             if (siteIcon.startsWith('http') || siteIcon.startsWith('/')) {
-                logoEl.innerHTML = `<img loading="lazy" src="${siteIcon}" style="height:24px;width:24px;vertical-align:middle;margin-right:8px;" onerror="this.style.display='none';"> ${siteName}`;
+                logoEl.innerHTML = `<img loading="lazy" src="${siteIcon}" style="height:24px;width:24px;vertical-align:middle;margin-right:8px;"> ${siteName}`;
             } else {
                 logoEl.innerHTML = `${siteIcon} ${siteName}`;
             }
@@ -403,17 +401,6 @@ async function addProduct(){
 const file =
 document.getElementById("imageFile").files[0];
 
-// BUG FIX: this page never checked whether a file was even
-// selected — clicking "Add Product" with no image chosen would
-// silently create a product with no image.
-if(!file){
-
-toast("Please select an image first.", "error");
-
-return;
-
-}
-
 const formData =
 new FormData();
 
@@ -430,17 +417,6 @@ body:formData
 
 const uploadData =
 await uploadRes.json();
-
-// BUG FIX: also never checked whether the upload actually
-// succeeded — a rejected/failed upload still let the product get
-// created anyway, just silently missing its image.
-if(!uploadRes.ok || !uploadData.image){
-
-toast(uploadData.message || "Image upload failed. Please try again.", "error");
-
-return;
-
-}
 
 const image =
 uploadData.image;
