@@ -32,6 +32,8 @@ async function applySiteSettings() {
             url: (s.siteUrl || window.location.origin) + window.location.pathname
         });
 
+        injectCustomHtml(s.headHtml, s.footerHtml);
+
         // 2. تحديث الـ Favicon
         if (favicon) {
             const faviconLink = document.getElementById('faviconLink');
@@ -64,7 +66,7 @@ async function applySiteSettings() {
         const logoEl = document.querySelector('.logo');
         if (logoEl) {
             if (siteIcon.startsWith('http') || siteIcon.startsWith('/')) {
-                logoEl.innerHTML = `<img loading="lazy" src="${siteIcon}" style="height:24px;width:24px;vertical-align:middle;margin-right:8px;"> ${siteName}`;
+                logoEl.innerHTML = `<img loading="lazy" src="${siteIcon}" style="height:24px;width:24px;vertical-align:middle;margin-right:8px;" onerror="this.style.display='none';"> ${siteName}`;
             } else {
                 logoEl.innerHTML = `${siteIcon} ${siteName}`;
             }
@@ -119,6 +121,55 @@ margin:2px;
 border:none;
 border-radius:5px;
 cursor:pointer;
+white-space:nowrap;
+}
+
+/* Actions column: keep all 5 buttons in a single row per user.
+   If they don't fit the column width, this scrolls horizontally
+   instead of the buttons wrapping onto multiple lines (which used
+   to make every user take up 2-3 rows in tall stacks). */
+.actions-cell{
+padding:6px !important;
+}
+
+.actions-row{
+display:flex;
+flex-wrap:nowrap;
+gap:4px;
+overflow-x:auto;
+padding:4px;
+scrollbar-width:thin;
+}
+
+.actions-row::-webkit-scrollbar{
+height:6px;
+}
+
+.actions-row::-webkit-scrollbar-thumb{
+background:#444;
+border-radius:3px;
+}
+
+.search-box{
+margin-top:20px;
+margin-bottom:10px;
+}
+
+.search-box input{
+width:100%;
+padding:12px 16px;
+border-radius:8px;
+border:1px solid #333;
+background:#1b1b1b;
+color:white;
+font-size:15px;
+box-sizing:border-box;
+}
+
+.no-results{
+text-align:center;
+padding:30px;
+color:#888;
 }
 
 .role{
@@ -162,6 +213,14 @@ text-decoration:none;
 <h1>
 👥 Manage Users
 </h1>
+
+<div class="search-box">
+<input
+type="text"
+id="userSearch"
+placeholder="🔍 Search by nickname, email, role, or status..."
+oninput="renderUsers()">
+</div>
 
 <table>
 
@@ -233,18 +292,59 @@ Cancel
 </dialog>
 <script>
 
+let allUsers = [];
+
 async function loadUsers(){
 
 const res =
 await fetch("/api/users");
 
-const users =
+allUsers =
 await res.json();
+
+renderUsers();
+
+}
+
+function renderUsers(){
+
+const query =
+document.getElementById("userSearch").value.trim().toLowerCase();
+
+// Search across every visible field: nickname, email, role, and
+// status (Active / Blocked / Permanent / the block reason too) —
+// "all possibilities" the admin might type to find a user.
+const users = !query ? allUsers : allUsers.filter(user => {
+
+const statusText =
+user.blocked
+? `blocked ${user.blockUntil ? new Date(user.blockUntil).toLocaleDateString() : "permanent"} ${user.blockReason || ""}`
+: "active";
+
+const haystack = [
+user.nickname,
+user.email,
+user.role,
+statusText
+].join(" ").toLowerCase();
+
+return haystack.includes(query);
+
+});
 
 const table =
 document.getElementById("usersTable");
 
 table.innerHTML = "";
+
+if(users.length === 0){
+
+table.innerHTML =
+`<tr><td colspan="5" class="no-results">No users match "${query}"</td></tr>`;
+
+return;
+
+}
 
 users.forEach(user=>{
 
@@ -286,7 +386,8 @@ new Date(user.blockUntil).toLocaleDateString()
 
 </td>
 
-<td>
+<td class="actions-cell">
+<div class="actions-row">
 
 <button
 class="role"
@@ -344,6 +445,7 @@ Delete
 
 </button>
 
+</div>
 </td>
 
 </tr>
