@@ -4,6 +4,9 @@ const router = express.Router();
 const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
+const cloudinary = require("cloudinary").v2;
+const streamifier = require("streamifier");
+const Settings = require("../models/Settings");
 
 const { verifyToken, requireRole } = require("../middleware/auth");
 
@@ -118,28 +121,100 @@ fileFilter: (req, file, cb) => {
 
 });
 
-router.post("/upload",upload.single("file"),(req,res)=>{
+router.post("/upload", upload.single("file"), async (req,res)=>{
 
-if (!req.file) {
-    return res.status(400).json({ success:false, message: "Upload rejected." });
+try{
+
+    if(!req.file){
+        return res.status(400).json({
+            success:false,
+            message:"No file uploaded"
+        });
+    }
+
+    const settings = await Settings.findOne();
+
+    // ======================
+    // CLOUDINARY
+    // ======================
+
+    if(settings?.storageSettings?.storageType==="cloudinary"){
+
+        cloudinary.config({
+
+            cloud_name:settings.storageSettings.cloudName,
+
+            api_key:settings.storageSettings.cloudApiKey,
+
+            api_secret:settings.storageSettings.cloudApiSecret
+
+        });
+
+        const uploaded = await new Promise((resolve,reject)=>{
+
+            const stream = cloudinary.uploader.upload_stream({
+
+                folder:"extrashope"
+
+            },(err,result)=>{
+
+                if(err) return reject(err);
+
+                resolve(result);
+
+            });
+
+            streamifier
+            .createReadStream(req.file.buffer)
+            .pipe(stream);
+
+        });
+
+        return res.json({
+
+            success:true,
+
+            url:uploaded.secure_url,
+
+            name:uploaded.public_id
+
+        });
+
+    }
+
+    // ======================
+    // LOCAL
+    // ======================
+
+    const dirPrefix =
+    req.query.dir
+    ? req.query.dir.replace(/\/+$/,"")+"/"
+    : "";
+
+    return res.json({
+
+        success:true,
+
+        url:"/manage/"+dirPrefix+req.file.filename,
+
+        name:req.file.filename
+
+    });
+
+}catch(err){
+
+    console.log(err);
+
+    res.status(500).json({
+
+        success:false,
+
+        message:err.message
+
+    });
+
 }
 
-const dirPrefix = req.query.dir ? req.query.dir.replace(/\/+$/,"") + "/" : "";
-
-res.json({
-
-success:true,
-
-url:"/manage/" + dirPrefix + req.file.filename,
-
-name:req.file.filename
-
-});
-
-});
-
-router.use((err, req, res, next) => {
-    res.status(400).json({ success:false, message: err.message || "Upload Error" });
 });
 
 // ===============================
