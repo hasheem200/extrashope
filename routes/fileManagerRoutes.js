@@ -267,7 +267,7 @@ try{
         message:err.message
 
     });
-=======
+
 const uploadMemory = multer({
     storage: memStorage,
     limits: { fileSize: 25 * 1024 * 1024 },
@@ -289,8 +289,7 @@ router.post("/upload", async (req, res, next) => {
 
 }
 
-<<<<<<< HEAD
-=======
+
 const mode = await getStorageMode();
 
 if (mode === "cloudinary") {
@@ -342,7 +341,7 @@ name:req.file.filename
 
 router.use((err, req, res, next) => {
     res.status(400).json({ success:false, message: err.message || "Upload Error" });
->>>>>>> e18eefb (Update project)
+ e18eefb (Update project)
 });
 
 // ===============================
