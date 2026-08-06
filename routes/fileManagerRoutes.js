@@ -5,9 +5,13 @@ const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
+<<<<<<< HEAD
 const streamifier = require("streamifier");
 const Settings = require("../models/Settings");
+=======
+>>>>>>> e18eefb (Update project)
 
+const Settings = require("../models/Settings");
 const { verifyToken, requireRole } = require("../middleware/auth");
 
 const MANAGE_DIR = path.join(__dirname,"../public/manage");
@@ -18,16 +22,28 @@ if(!fs.existsSync(MANAGE_DIR)){
 }
 
 /*
-  SECURITY: this is a full cPanel-style file manager with zero
-  authentication — anyone on the internet could upload ANY file
-  type (including .php, .exe, .js, server scripts) directly into
-  a folder served by the site, list every file, and delete any of
-  them. This is one of the most dangerous endpoints in the whole
-  project. Fixed by:
-  1) Requiring admin login for every route in this file.
-  2) Blocking dangerous/executable file extensions on upload.
-  3) Sanitizing every path so "../" can never escape MANAGE_DIR,
-     even now that subfolders are supported (see resolveSafePath).
+  ==============================================================
+  This file manager now supports TWO backends:
+
+  - LOCAL: manages public/manage on this server's own disk
+    (original behavior, unchanged).
+  - CLOUDINARY: when Admin -> Website Settings -> Storage Type is
+    set to "Cloudinary", this manages the SAME "extrashope" folder
+    on Cloudinary that product photo uploads already go to (see
+    uploadRoutes.js) — so the File Manager shows the actual place
+    your images are really being stored, instead of an empty local
+    folder nobody is uploading into anymore.
+
+  Which backend is used is decided automatically per-request by
+  checking Settings.storageSettings.storageType — nothing needs to
+  be configured here separately, and local-storage sites keep
+  working exactly as before with zero behavior change.
+
+  SECURITY: this is still a full file manager — every route below
+  requires admin login, dangerous file extensions are still
+  blocked on upload, and local-disk paths are still sandboxed
+  against "../" traversal (see resolveSafePath) exactly as before.
+  ==============================================================
 */
 
 router.use(verifyToken, requireRole("admin"));
@@ -39,12 +55,38 @@ const DANGEROUS_EXTENSIONS = [
     ".jsp", ".jspx", ".vbs", ".ps1", ".htaccess", ".config"
 ];
 
+const CLOUDINARY_ROOT = "extrashope"; // same folder uploadRoutes.js uploads product photos into
+
+async function getStorageMode() {
+
+    const settings = await Settings.findOne();
+
+    if (settings?.storageSettings?.storageType === "cloudinary" &&
+        settings.storageSettings.cloudName &&
+        settings.storageSettings.cloudApiKey &&
+        settings.storageSettings.cloudApiSecret) {
+
+        cloudinary.config({
+            cloud_name: settings.storageSettings.cloudName,
+            api_key: settings.storageSettings.cloudApiKey,
+            api_secret: settings.storageSettings.cloudApiSecret
+        });
+
+        return "cloudinary";
+
+    }
+
+    return "local";
+
+}
+
 /*
   Resolves a user-supplied relative path (which may contain
   subfolders, e.g. "photos/2024") safely against MANAGE_DIR.
   Throws if the result would escape MANAGE_DIR in any way —
   this is what makes folder support safe against "../../etc"
-  style attacks.
+  style attacks. (Local mode only — Cloudinary has no local
+  filesystem to escape.)
 */
 function resolveSafePath(relativePath) {
 
@@ -63,11 +105,25 @@ function resolveSafePath(relativePath) {
 
 }
 
+// Cloudinary organizes uploads by public_id path — this builds
+// "extrashope/subfolder/name" consistently from a dir+name pair,
+// stripping any empty segments.
+function cloudinaryPath(...segments) {
+
+    return segments
+        .filter(Boolean)
+        .join("/")
+        .split("/")
+        .filter(Boolean)
+        .join("/");
+
+}
+
 // ===============================
 // Upload (optionally into a subfolder via ?dir=)
 // ===============================
 
-const storage = multer.diskStorage({
+const localStorage_ = multer.diskStorage({
 
 destination:(req,file,cb)=>{
 
@@ -97,15 +153,9 @@ Date.now() + "-" + safeOriginal
 
 });
 
-const upload = multer({
+const memStorage = multer.memoryStorage();
 
-storage,
-
-limits: {
-    fileSize: 25 * 1024 * 1024 // 25MB
-},
-
-fileFilter: (req, file, cb) => {
+function fileFilterFn(req, file, cb) {
 
     const ext = path.extname(file.originalname).toLowerCase();
 
@@ -119,8 +169,13 @@ fileFilter: (req, file, cb) => {
 
 }
 
+const uploadLocal = multer({
+    storage: localStorage_,
+    limits: { fileSize: 25 * 1024 * 1024 },
+    fileFilter: fileFilterFn
 });
 
+<<<<<<< HEAD
 router.post("/upload", upload.single("file"), async (req,res)=>{
 
 try{
@@ -212,16 +267,142 @@ try{
         message:err.message
 
     });
+=======
+const uploadMemory = multer({
+    storage: memStorage,
+    limits: { fileSize: 25 * 1024 * 1024 },
+    fileFilter: fileFilterFn
+});
+
+router.post("/upload", async (req, res, next) => {
+
+    const mode = await getStorageMode();
+
+    if (mode === "cloudinary") {
+        return uploadMemory.single("file")(req, res, next);
+    }
+
+    return uploadLocal.single("file")(req, res, next);
+
+}, async (req, res) => {
+>>>>>>> e18eefb (Update project)
 
 }
 
+<<<<<<< HEAD
+=======
+const mode = await getStorageMode();
+
+if (mode === "cloudinary") {
+
+    try {
+
+        const folder = cloudinaryPath(CLOUDINARY_ROOT, req.query.dir || "");
+
+        const safeOriginal = path.basename(req.file.originalname).replace(/\.[^.]+$/, "");
+
+        const uploaded = await new Promise((resolve, reject) => {
+
+            const stream = cloudinary.uploader.upload_stream(
+                { folder, public_id: Date.now() + "-" + safeOriginal, resource_type: "auto" },
+                (err, result) => err ? reject(err) : resolve(result)
+            );
+
+            stream.end(req.file.buffer);
+
+        });
+
+        return res.json({
+            success: true,
+            url: uploaded.secure_url,
+            name: uploaded.public_id.split("/").pop()
+        });
+
+    } catch (e) {
+
+        return res.status(400).json({ success:false, message: e.message });
+
+    }
+
+}
+
+const dirPrefix = req.query.dir ? req.query.dir.replace(/\/+$/,"") + "/" : "";
+
+res.json({
+
+success:true,
+
+url:"/manage/" + dirPrefix + req.file.filename,
+
+name:req.file.filename
+
+});
+
+});
+
+router.use((err, req, res, next) => {
+    res.status(400).json({ success:false, message: err.message || "Upload Error" });
+>>>>>>> e18eefb (Update project)
 });
 
 // ===============================
 // List Files & Folders (?dir=subfolder)
 // ===============================
 
-router.get("/files",(req,res)=>{
+router.get("/files", async (req,res)=>{
+
+const mode = await getStorageMode();
+
+if (mode === "cloudinary") {
+
+    try {
+
+        const prefix = cloudinaryPath(CLOUDINARY_ROOT, req.query.dir || "") + "/";
+
+        const [foldersResult, filesResult] = await Promise.all([
+
+            cloudinary.api.sub_folders(prefix.slice(0, -1)).catch(() => ({ folders: [] })),
+
+            cloudinary.api.resources({
+                type: "upload",
+                prefix,
+                max_results: 500
+            }).catch(() => ({ resources: [] }))
+
+        ]);
+
+        const folders = (foldersResult.folders || []).map(f => ({
+            name: f.name,
+            type: "folder",
+            url: null,
+            size: null,
+            created: null
+        }));
+
+        // only show files directly inside this folder, not ones in
+        // deeper subfolders (Cloudinary's prefix search is recursive)
+        const files = (filesResult.resources || [])
+            .filter(r => {
+                const rest = r.public_id.slice(prefix.length);
+                return rest.length > 0 && !rest.includes("/");
+            })
+            .map(r => ({
+                name: r.public_id.split("/").pop() + (r.format ? "." + r.format : ""),
+                type: "file",
+                url: r.secure_url,
+                size: r.bytes,
+                created: r.created_at
+            }));
+
+        return res.json([...folders, ...files]);
+
+    } catch (e) {
+
+        return res.status(400).json({ message: e.message });
+
+    }
+
+}
 
 try {
 
@@ -268,15 +449,35 @@ try {
 // Create Folder
 // ===============================
 
-router.post("/folder",(req,res)=>{
+router.post("/folder", async (req,res)=>{
+
+const mode = await getStorageMode();
+
+const { dir, name } = req.body;
+
+if (!name || /[\/\\]/.test(name)) {
+    return res.status(400).json({ success:false, message:"Invalid folder name" });
+}
+
+if (mode === "cloudinary") {
+
+    try {
+
+        const folderPath = cloudinaryPath(CLOUDINARY_ROOT, dir || "", name);
+
+        await cloudinary.api.create_folder(folderPath);
+
+        return res.json({ success:true });
+
+    } catch (e) {
+
+        return res.status(400).json({ success:false, message: e.message });
+
+    }
+
+}
 
 try {
-
-    const { dir, name } = req.body;
-
-    if (!name || /[\/\\]/.test(name)) {
-        return res.status(400).json({ success:false, message:"Invalid folder name" });
-    }
 
     const parentPath = resolveSafePath(dir || "");
     const newFolderPath = path.join(parentPath, name);
@@ -301,15 +502,43 @@ try {
 // Rename a file or folder
 // ===============================
 
-router.put("/rename",(req,res)=>{
+router.put("/rename", async (req,res)=>{
+
+const mode = await getStorageMode();
+
+const { dir, oldName, newName } = req.body;
+
+if (!newName || /[\/\\]/.test(newName)) {
+    return res.status(400).json({ success:false, message:"Invalid new name" });
+}
+
+if (mode === "cloudinary") {
+
+    try {
+
+        const parent = cloudinaryPath(CLOUDINARY_ROOT, dir || "");
+
+        // strip extension for the public_id side, Cloudinary keeps
+        // the file's original format regardless
+        const oldBase = (oldName || "").replace(/\.[^.]+$/, "");
+        const newBase = newName.replace(/\.[^.]+$/, "");
+
+        const fromId = cloudinaryPath(parent, oldBase);
+        const toId = cloudinaryPath(parent, newBase);
+
+        await cloudinary.uploader.rename(fromId, toId);
+
+        return res.json({ success:true });
+
+    } catch (e) {
+
+        return res.status(400).json({ success:false, message: e.message });
+
+    }
+
+}
 
 try {
-
-    const { dir, oldName, newName } = req.body;
-
-    if (!newName || /[\/\\]/.test(newName)) {
-        return res.status(400).json({ success:false, message:"Invalid new name" });
-    }
 
     const parentPath = resolveSafePath(dir || "");
     const oldPath = path.join(parentPath, path.basename(oldName || ""));
@@ -339,11 +568,34 @@ try {
 // Move a file or folder to a different directory
 // ===============================
 
-router.put("/move",(req,res)=>{
+router.put("/move", async (req,res)=>{
+
+const mode = await getStorageMode();
+
+const { sourceDir, name, targetDir } = req.body;
+
+if (mode === "cloudinary") {
+
+    try {
+
+        const base = (name || "").replace(/\.[^.]+$/, "");
+
+        const fromId = cloudinaryPath(CLOUDINARY_ROOT, sourceDir || "", base);
+        const toId = cloudinaryPath(CLOUDINARY_ROOT, targetDir || "", base);
+
+        await cloudinary.uploader.rename(fromId, toId);
+
+        return res.json({ success:true });
+
+    } catch (e) {
+
+        return res.status(400).json({ success:false, message: e.message });
+
+    }
+
+}
 
 try {
-
-    const { sourceDir, name, targetDir } = req.body;
 
     const sourceParent = resolveSafePath(sourceDir || "");
     const targetParent = resolveSafePath(targetDir || "");
@@ -375,7 +627,31 @@ try {
 // Delete a single file/folder (kept for backward compatibility)
 // ===============================
 
-router.delete("/files/:name",(req,res)=>{
+router.delete("/files/:name", async (req,res)=>{
+
+const mode = await getStorageMode();
+
+if (mode === "cloudinary") {
+
+    try {
+
+        const base = path.basename(req.params.name).replace(/\.[^.]+$/, "");
+        const publicId = cloudinaryPath(CLOUDINARY_ROOT, req.query.dir || "", base);
+
+        await cloudinary.uploader.destroy(publicId).catch(() => {});
+
+        // in case it was actually a folder, not a file
+        await cloudinary.api.delete_folder(publicId).catch(() => {});
+
+        return res.json({ success:true });
+
+    } catch (e) {
+
+        return res.status(400).json({ success:false, message: e.message });
+
+    }
+
+}
 
 try {
 
@@ -405,15 +681,42 @@ try {
 // Bulk delete
 // ===============================
 
-router.post("/delete-bulk",(req,res)=>{
+router.post("/delete-bulk", async (req,res)=>{
+
+const mode = await getStorageMode();
+
+const { dir, names } = req.body;
+
+if (!Array.isArray(names) || names.length === 0) {
+    return res.status(400).json({ success:false, message:"No items selected" });
+}
+
+if (mode === "cloudinary") {
+
+    try {
+
+        const publicIds = names.map(name => {
+            const base = path.basename(name).replace(/\.[^.]+$/, "");
+            return cloudinaryPath(CLOUDINARY_ROOT, dir || "", base);
+        });
+
+        await cloudinary.api.delete_resources(publicIds).catch(() => {});
+
+        for (const id of publicIds) {
+            await cloudinary.api.delete_folder(id).catch(() => {});
+        }
+
+        return res.json({ success:true, deleted: names.length });
+
+    } catch (e) {
+
+        return res.status(400).json({ success:false, message: e.message });
+
+    }
+
+}
 
 try {
-
-    const { dir, names } = req.body;
-
-    if (!Array.isArray(names) || names.length === 0) {
-        return res.status(400).json({ success:false, message:"No items selected" });
-    }
 
     const dirPath = resolveSafePath(dir || "");
 

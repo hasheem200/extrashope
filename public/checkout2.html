@@ -118,6 +118,8 @@ document.addEventListener('DOMContentLoaded', applySiteSettings);
 
 <div class="crypto-box">
 
+<img id="paymentLogo" style="max-height:40px;display:none;margin-bottom:8px;">
+
 <h2 id="paymentTitle"></h2>
 
 <p id="paymentDescription"></p>
@@ -128,7 +130,7 @@ readonly>
 
 <p id="paymentNetwork"></p>
 
-
+<img id="paymentQr" style="max-width:180px;display:none;margin:12px auto;border-radius:8px;">
 
 <button onclick="copyWallet()">
 Copy
@@ -186,6 +188,18 @@ async function loadPaymentSettings(){
 
     document.getElementById("copyBtn").innerText =
         data.buttonText;
+
+    const logoEl = document.getElementById("paymentLogo");
+    if(data.logo){
+        logoEl.src = data.logo;
+        logoEl.style.display = "inline-block";
+    }
+
+    const qrEl = document.getElementById("paymentQr");
+    if(data.qr){
+        qrEl.src = data.qr;
+        qrEl.style.display = "block";
+    }
 
 }
 

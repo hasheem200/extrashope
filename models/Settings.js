@@ -86,6 +86,11 @@ paymentSettings:{
     qr:{
         type:String,
         default:""
+    },
+
+    notificationEmail:{
+        type:String,
+        default:""
     }
 
 },

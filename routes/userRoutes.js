@@ -229,7 +229,13 @@ message:"User Not Found"
 
 }
 
-res.json(user);
+// PRIVACY: this route is public (store.html/product.html use it
+// to show a seller's storefront info to any visitor) — never leak
+// the seller's private notification email through it.
+const safeUser = user.toObject();
+delete safeUser.notificationEmail;
+
+res.json(safeUser);
 
 }catch(err){
 
@@ -289,7 +295,12 @@ message:"Store not found"
 });
 }
 
-res.json(user);
+// PRIVACY: same as GET /:nickname above — never leak the private
+// notification email through this public-facing route.
+const safeUser = user.toObject();
+delete safeUser.notificationEmail;
+
+res.json(safeUser);
 
 }catch(err){
 

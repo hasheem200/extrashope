@@ -4,6 +4,8 @@ const router = express.Router();
 const User = require("../models/User");
 const Withdraw = require("../models/Withdraw");
 const Notification = require("../models/Notification");
+const notifyAdmin = require("../utils/notifyAdmin");
+const notifyUserByEmail = require("../utils/notifyUserByEmail");
 const { verifyToken, requireRole, requireSelfOrAdmin } = require("../middleware/auth");
 
 
@@ -60,6 +62,32 @@ router.post("/", verifyToken, async (req, res) => {
       user: seller,
       title: "Withdraw Request",
       message: `$${value} request submitted`
+    });
+
+    notifyUserByEmail(seller, {
+      type: "info",
+      title: "Withdraw Request Submitted",
+      message: `Your withdrawal request for $${value.toFixed(2)} has been submitted and is waiting for admin review.`,
+      details: {
+        Amount: `$${value.toFixed(2)}`,
+        Method: method || "N/A"
+      },
+      actionUrl: `${req.protocol}://${req.get("host")}/withdraws`,
+      actionLabel: "View Withdraw Status"
+    });
+
+    notifyAdmin({
+      type: "warning",
+      title: "New Withdraw Request",
+      message: `${seller} has requested a withdrawal and it's waiting for your review.`,
+      details: {
+        Seller: seller,
+        Amount: `$${value.toFixed(2)}`,
+        Method: method || "N/A",
+        Account: binanceAccount || "N/A"
+      },
+      actionUrl: `${req.protocol}://${req.get("host")}/pending-withdraws`,
+      actionLabel: "Review Withdraw"
     });
 
     console.log(
@@ -168,6 +196,27 @@ router.put("/:id/complete", verifyToken, requireRole("admin"), async (req, res) 
     message: `$${withdraw.amount} has been approved`
   });
 
+  notifyUserByEmail(withdraw.seller, {
+    type: "success",
+    title: "Withdraw Approved 🎉",
+    message: `Your withdrawal of $${Number(withdraw.amount).toFixed(2)} has been approved and completed.`,
+    details: {
+      Amount: `$${Number(withdraw.amount).toFixed(2)}`,
+      Method: withdraw.method || "N/A"
+    }
+  });
+
+  notifyAdmin({
+    type: "success",
+    title: "Withdraw Completed",
+    message: `The withdrawal for ${withdraw.seller} has been marked as completed.`,
+    details: {
+      Seller: withdraw.seller,
+      Amount: `$${Number(withdraw.amount).toFixed(2)}`,
+      Method: withdraw.method || "N/A"
+    }
+  });
+
   res.json({
     success: true,
     message: "Withdraw Completed"
@@ -220,6 +269,25 @@ router.put("/:id/reject", verifyToken, requireRole("admin"), async (req, res) =>
     user: withdraw.seller,
     title: "Withdraw Rejected",
     message: `$${withdraw.amount} returned to your wallet`
+  });
+
+  notifyUserByEmail(withdraw.seller, {
+    type: "danger",
+    title: "Withdraw Rejected",
+    message: `Your withdrawal request for $${Number(withdraw.amount).toFixed(2)} was rejected. The amount has been returned to your wallet.`,
+    details: {
+      Amount: `$${Number(withdraw.amount).toFixed(2)}`
+    }
+  });
+
+  notifyAdmin({
+    type: "info",
+    title: "Withdraw Rejected",
+    message: `The withdrawal for ${withdraw.seller} was rejected and the amount was returned to their wallet.`,
+    details: {
+      Seller: withdraw.seller,
+      Amount: `$${Number(withdraw.amount).toFixed(2)}`
+    }
   });
 
   res.json({

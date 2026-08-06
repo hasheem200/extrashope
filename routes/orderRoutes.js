@@ -10,6 +10,8 @@ const Order = require("../models/Order");
 const Product = require("../models/Product");
 
 const Settings = require("../models/Settings");
+const notifyAdmin = require("../utils/notifyAdmin");
+const notifyUserByEmail = require("../utils/notifyUserByEmail");
 
 const { verifyToken, requireRole } = require("../middleware/auth");
 
@@ -61,7 +63,58 @@ new Order(body);
 
 await order.save();
 
+const orderTotal = Number(order.total || 0);
 
+const productNames = (order.products || [])
+    .map(p => p.name)
+    .filter(Boolean)
+    .join(", ");
+
+// One order can contain products from multiple sellers — notify
+// each affected seller individually about their own item(s).
+const productsBySeller = {};
+
+for (const product of (order.products || [])) {
+
+    const sellerName = product.seller || "Admin";
+
+    if (!productsBySeller[sellerName]) productsBySeller[sellerName] = [];
+
+    productsBySeller[sellerName].push(product);
+
+}
+
+for (const [sellerName, products] of Object.entries(productsBySeller)) {
+
+    const sellerTotal = products.reduce((sum, p) => sum + Number(p.price || 0), 0);
+
+    notifyUserByEmail(sellerName, {
+        type: "warning",
+        title: "You Made a Sale! 🎉",
+        message: `${req.user.nickname} just ordered ${products.length > 1 ? "your products" : "your product"}. It's pending payment verification.`,
+        details: {
+            Buyer: req.user.nickname,
+            Items: products.map(p => p.name).filter(Boolean).join(", "),
+            Total: `$${sellerTotal.toFixed(2)}`
+        },
+        actionUrl: `${req.protocol}://${req.get("host")}/seller-products`,
+        actionLabel: "View Your Orders"
+    });
+
+}
+
+notifyAdmin({
+    type: "warning",
+    title: "New Order Placed",
+    message: `${req.user.nickname} placed a new order that needs payment verification.`,
+    details: {
+        Customer: req.user.nickname,
+        Total: `$${orderTotal.toFixed(2)}`,
+        Items: productNames || `${(order.products || []).length} item(s)`
+    },
+    actionUrl: `${req.protocol}://${req.get("host")}/admin-orders`,
+    actionLabel: "Review Order"
+});
 
 res.json({
 
@@ -169,6 +222,23 @@ order.status = "Approved";
 
 await order.save();
 
+notifyUserByEmail(order.customer, {
+    type: "success",
+    title: "Your Order Has Been Approved! 🎉",
+    message: order.deliveredLogin
+        ? "Your payment was verified and your product is ready. Your access details are below."
+        : "Your payment was verified and your order has been processed.",
+    details: {
+        Total: `$${Number(order.total || 0).toFixed(2)}`,
+        ...(order.deliveredLogin ? {
+            Login: order.deliveredLogin,
+            Password: order.deliveredPassword
+        } : {})
+    },
+    actionUrl: `${req.protocol}://${req.get("host")}/orders`,
+    actionLabel: "View Your Order"
+});
+
 // PERFORMANCE: fetch Settings ONCE before the loop instead of
 // once per product — with a multi-item order this was hitting
 // the database repeatedly for the exact same document.
@@ -212,6 +282,19 @@ seller.totalSales += 1;
 
 await seller.save();
 
+notifyUserByEmail(seller.nickname, {
+    type: "success",
+    title: "Order Approved — You Got Paid! 💰",
+    message: `Your sale of "${product.name || "a product"}" was approved. $${sellerAmount.toFixed(2)} has been added to your wallet.`,
+    details: {
+        Product: product.name || "N/A",
+        Earned: `$${sellerAmount.toFixed(2)}`,
+        "New Balance": `$${seller.wallet.toFixed(2)}`
+    },
+    actionUrl: `${req.protocol}://${req.get("host")}/seller-dashboard`,
+    actionLabel: "View Dashboard"
+});
+
 settings.adminWallet =
 Number(settings.adminWallet || 0) + Number(adminAmount);
 
@@ -223,7 +306,15 @@ console.log("Admin Wallet After Save =", settings.adminWallet);
 console.log("Commission =", commission);
 console.log("Admin Wallet =", settings.adminWallet);
 
-
+notifyAdmin({
+    type: "success",
+    title: "Order Approved",
+    message: `Order for ${order.customer} was approved and ${order.deliveredLogin ? "delivery credentials were released" : "processed"}.`,
+    details: {
+        Customer: order.customer,
+        Total: `$${Number(order.total || 0).toFixed(2)}`
+    }
+});
 
 return res.json({
 message:"Order Approved",

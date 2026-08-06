@@ -427,8 +427,15 @@ if (data.success) {
 
 function copyLink(url){
 
+// BUG FIX: this used to always prepend location.origin, which
+// made sense for LOCAL files (relative paths like "/manage/x.jpg")
+// but broke Cloudinary files — their url is already a complete
+// "https://res.cloudinary.com/..." link, so blindly prepending
+// the origin produced "http://localhost:5001https://res.cloudinary...",
+// a broken URL that doesn't open anywhere. Now it only adds the
+// origin if the URL isn't already absolute.
 const full =
-location.origin + url;
+/^https?:\/\//i.test(url) ? url : location.origin + url;
 
 navigator.clipboard.writeText(full);
 

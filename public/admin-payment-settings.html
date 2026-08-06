@@ -149,6 +149,30 @@ font-size:18px;
 
 <input id="buttonText" placeholder="Button Text">
 
+<label style="display:block;margin-bottom:8px;color:#555;font-size:14px;">
+Payment Method Logo (shown to buyers at checkout)
+</label>
+
+<img id="logoPreview" style="max-height:50px;display:none;margin-bottom:10px;">
+
+<input type="file" id="logoFile" accept="image/*" style="margin-bottom:20px;">
+
+<label style="display:block;margin-bottom:8px;color:#555;font-size:14px;">
+Payment QR Code (buyers can scan this to pay instead of copying the address)
+</label>
+
+<img id="qrPreview" style="max-width:150px;display:none;margin-bottom:10px;">
+
+<input type="file" id="qrFile" accept="image/*" style="margin-bottom:20px;">
+
+<hr style="margin:25px 0;border:none;border-top:1px solid #eee;">
+
+<label style="display:block;margin-bottom:8px;color:#555;font-size:14px;">
+Notification Email (receives a copy of every platform notification — withdraw requests, orders, support tickets, etc.)
+</label>
+
+<input id="notificationEmail" placeholder="you@example.com">
+
 <button onclick="save()">
 Save Settings
 </button>
@@ -157,10 +181,13 @@ Save Settings
 
 <script>
 
+let currentLogo = "";
+let currentQr = "";
+
 async function load(){
 
     const res =
-    await fetch("/api/payment-settings");
+    await fetch("/api/payment-settings/full");
 
     const data =
     await res.json();
@@ -180,11 +207,63 @@ async function load(){
     document.getElementById("buttonText").value =
     data.buttonText || "";
 
+    document.getElementById("notificationEmail").value =
+    data.notificationEmail || "";
+
+    currentLogo = data.logo || "";
+    currentQr = data.qr || "";
+
+    if(currentLogo){
+        const preview = document.getElementById("logoPreview");
+        preview.src = currentLogo;
+        preview.style.display = "inline-block";
+    }
+
+    if(currentQr){
+        const preview = document.getElementById("qrPreview");
+        preview.src = currentQr;
+        preview.style.display = "inline-block";
+    }
+
+}
+
+async function uploadIfSelected(inputId){
+
+    const file = document.getElementById(inputId).files[0];
+
+    if(!file) return null;
+
+    const form = new FormData();
+    form.append("image", file);
+
+    const res = await fetch("/api/upload", {
+        method:"POST",
+        body:form
+    });
+
+    const data = await res.json();
+
+    if(!res.ok || !data.image){
+        toast(data.message || `Upload of ${inputId} failed — keeping the previous file.`, "error");
+        return null;
+    }
+
+    return data.image;
+
 }
 
 async function save(){
 
-    await fetch("/api/payment-settings",{
+    // Upload any newly-selected logo/QR first. If nothing was
+    // selected (or the upload failed), fall back to whatever was
+    // already saved — editing other fields never wipes these out.
+    const newLogo = await uploadIfSelected("logoFile");
+    const newQr = await uploadIfSelected("qrFile");
+
+    const logo = newLogo || currentLogo;
+    const qr = newQr || currentQr;
+
+    const res = await fetch("/api/payment-settings",{
 
         method:"PUT",
 
@@ -202,11 +281,22 @@ async function save(){
 
             network:document.getElementById("network").value,
 
-            buttonText:document.getElementById("buttonText").value
+            buttonText:document.getElementById("buttonText").value,
+
+            notificationEmail:document.getElementById("notificationEmail").value,
+
+            logo,
+
+            qr
 
         })
 
     });
+
+    if(res.ok){
+        currentLogo = logo;
+        currentQr = qr;
+    }
 
     toast("Saved Successfully ✅");
 

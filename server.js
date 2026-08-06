@@ -15,6 +15,7 @@ const Settings = require("./models/Settings");
 const settingsRoutes = require("./routes/settingsRoutes");
 const Advertisement = require("./models/Advertisement");
 const { verifyToken, requireRole } = require("./middleware/auth");
+const notifyAdmin = require("./utils/notifyAdmin");
 
 
 const app = express();
@@ -238,6 +239,20 @@ app.post("/api/support", async (req, res) => {
 
         await support.save();
 
+        notifyAdmin({
+            type: "warning",
+            title: "New Support Ticket",
+            message: `${support.seller} (${support.role}) submitted a support request: "${support.subject}"`,
+            details: {
+                From: support.seller,
+                Role: support.role,
+                Subject: support.subject,
+                Message: support.message
+            },
+            actionUrl: `${req.protocol}://${req.get("host")}/admin-support`,
+            actionLabel: "Reply to Ticket"
+        });
+
         res.json({
             success:true
         });
@@ -284,7 +299,19 @@ app.put("/api/payment-settings", verifyToken, requireRole("admin"), async(req,re
 
     }
 
-    settings.paymentSettings = req.body;
+    // BUG FIX: this used to be a blind replace
+    // ("settings.paymentSettings = req.body"), which meant any
+    // field NOT included in a given save request (like "logo" and
+    // "qr", which this form doesn't even have inputs for) got
+    // silently wiped back to its default every single time this
+    // page saved. Now it merges instead, so nothing gets lost.
+    settings.paymentSettings = {
+
+        ...(settings.paymentSettings || {}),
+
+        ...req.body
+
+    };
 
     await settings.save();
 
@@ -716,7 +743,25 @@ app.get("/api/ads/live", async (req, res) => {
 
 });
 
+/* SECURITY: this is called publicly by the checkout pages to show
+   buyers where to pay — it must never include the admin's private
+   notification email. */
 app.get("/api/payment-settings", async(req,res)=>{
+
+    const settings =
+    await Settings.findOne();
+
+    const payment = { ...(settings.paymentSettings?.toObject ? settings.paymentSettings.toObject() : settings.paymentSettings) };
+
+    delete payment.notificationEmail;
+
+    res.json(payment);
+
+});
+
+/* Admin-only — includes notificationEmail, used by the admin
+   Payment Settings page to populate its own edit form. */
+app.get("/api/payment-settings/full", verifyToken, requireRole("admin"), async(req,res)=>{
 
     const settings =
     await Settings.findOne();
