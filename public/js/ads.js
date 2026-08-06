@@ -306,7 +306,7 @@ function showLeftRectangle(){
     <img
     src="${ad.bannerImage}"
     style="
-    width:190px;
+    width:200px;
     height:280px;
     border-radius:10px;
     object-fit:cover;
