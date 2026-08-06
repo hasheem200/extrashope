@@ -146,7 +146,7 @@ function showRightLong(){
     <img
     src="${ad.bannerImage}"
     style="
-    width:200px;
+    width:300px;
     height:600px;
     border-radius:10px;
     object-fit:cover;
