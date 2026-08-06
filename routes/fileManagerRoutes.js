@@ -175,7 +175,7 @@ const uploadLocal = multer({
     fileFilter: fileFilterFn
 });
 
-<<<<<<< HEAD
+
 router.post("/upload", upload.single("file"), async (req,res)=>{
 
 try{
