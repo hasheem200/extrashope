@@ -11,7 +11,7 @@ const Settings = require("../models/Settings");
 
 
 
-const Settings = require("../models/Settings");
+
 const { verifyToken, requireRole } = require("../middleware/auth");
 
 const MANAGE_DIR = path.join(__dirname,"../public/manage");
