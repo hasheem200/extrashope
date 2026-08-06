@@ -38,6 +38,25 @@ default:null
 stockData:{
 type:String,
 default:""
+},
+
+// The fields below support a richer "showcase" product page
+// (like selling a website template/source code) — all optional,
+// a normal product just leaves them blank.
+
+version:{
+type:String,
+default:""
+},
+
+liveDemoUrl:{
+type:String,
+default:""
+},
+
+screenshots:{
+type:String, // comma-separated list of image URLs
+default:""
 }
 
 },

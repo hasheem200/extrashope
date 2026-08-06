@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Loading...</title>
+
+<link id="faviconLink" rel="icon" href="/favicon.ico">
+
+<script>
+async function applySiteSettings() {
+    try {
+        const settingsRes = await fetch("/api/settings");
+        const settingsData = await settingsRes.json();
+        const s = settingsData.siteSettings || {};
+        const siteName = s.siteName || "My Site";
+        const favicon = s.favicon || "";
+
+        setSeoTags({
+            title: document.title,
+            description: s.metaDescription || "",
+            siteName: siteName,
+            url: (s.siteUrl || window.location.origin) + window.location.pathname
+        });
+
+        if (favicon) {
+            const faviconLink = document.getElementById('faviconLink');
+            if (faviconLink) faviconLink.href = favicon;
+        }
+
+        document.title = `Add Template - ${siteName}`;
+
+    } catch (error) {
+        console.error('Failed to apply settings:', error);
+        document.title = "Add Template";
+    }
+}
+document.addEventListener('DOMContentLoaded', applySiteSettings);
+</script>
+
+<link rel="stylesheet" href="style.css">
+
+<style>
+
+.admin-container textarea{
+width:100%;
+padding:12px;
+margin-bottom:15px;
+font-size:16px;
+box-sizing:border-box;
+border:1px solid #ccc;
+border-radius:6px;
+font-family:inherit;
+}
+
+.field-label{
+display:block;
+margin:-8px 0 6px;
+color:#666;
+font-size:13px;
+}
+
+.upload-preview{
+max-height:120px;
+display:none;
+margin-bottom:10px;
+border-radius:6px;
+}
+
+</style>
+
+<script src="js/auth-fetch.js"></script>
+<script src="js/ui-helpers.js"></script>
+<script src="js/seo.js"></script>
+<script src="js/auth.js"></script>
+</head>
+
+<body>
+
+<header>
+
+<div class="logo">🧩 Add Template</div>
+
+<nav>
+
+<a href="/">Home</a>
+<a href="admin">Admin Panel</a>
+<a href="admin-Products-Manager">Products Manager</a>
+
+</nav>
+
+</header>
+
+<div class="admin-container">
+
+<h1>🧩 Add New Template</h1>
+
+<p style="color:#666;font-size:14px;margin-top:-10px;">
+This creates a separate listing shown to buyers on the "Template
+Details" page — it never appears on the homepage, shop, or search,
+and is kept completely separate from regular products.
+</p>
+
+<input type="text" id="templateName" placeholder="Template Name">
+
+<input type="number" id="templatePrice" placeholder="Price">
+
+<label class="field-label">Template Image</label>
+<img id="imagePreview" class="upload-preview">
+<input type="file" id="imageFile" accept="image/*">
+
+<input type="text" id="version" placeholder="Version (e.g. 1.0.0)">
+
+<input type="text" id="liveDemoUrl" placeholder="Live Demo URL (optional)">
+
+<label class="field-label">Admin Panel screenshot URLs, one per line (optional)</label>
+<textarea id="screenshots" placeholder="https://.../screenshot1.jpg&#10;https://.../screenshot2.jpg" rows="4"></textarea>
+
+<label class="field-label">Template File (.zip / .rar / .7z) — this is what the buyer receives after their order is approved</label>
+<input type="file" id="downloadFile" accept=".zip,.rar,.7z">
+<input type="hidden" id="downloadUrl">
+
+<button onclick="addTemplate()">Add Template</button>
+
+</div>
+
+<script>
+
+requireRole("admin");
+
+document.getElementById("imageFile")
+.addEventListener("change", function(){
+
+const file = this.files[0];
+
+if(!file) return;
+
+const reader = new FileReader();
+
+reader.onload = e => {
+    const preview = document.getElementById("imagePreview");
+    preview.src = e.target.result;
+    preview.style.display = "block";
+};
+
+reader.readAsDataURL(file);
+
+});
+
+document.getElementById("downloadFile")
+.addEventListener("change", async function(){
+
+const file = this.files[0];
+
+if(!file) return;
+
+const form = new FormData();
+form.append("file", file);
+
+if(typeof showLoading === "function") showLoading();
+
+try{
+
+const res = await fetch("/api/upload/download-file", {
+    method:"POST",
+    body:form
+});
+
+const data = await res.json();
+
+if(!res.ok || !data.file){
+    toast(data.message || "File upload failed. Please try again.", "error");
+    this.value = "";
+    return;
+}
+
+document.getElementById("downloadUrl").value = data.file;
+
+toast("Template file uploaded ✅", "success");
+
+}catch(err){
+
+toast("File upload failed. Please try again.", "error");
+
+this.value = "";
+
+}finally{
+
+if(typeof hideLoading === "function") hideLoading();
+
+}
+
+});
+
+async function addTemplate(){
+
+const name = document.getElementById("templateName").value.trim();
+const price = document.getElementById("templatePrice").value;
+const imageFile = document.getElementById("imageFile").files[0];
+const downloadUrl = document.getElementById("downloadUrl").value;
+
+if(!name){
+    toast("Please enter a template name.", "error");
+    return;
+}
+
+if(!price){
+    toast("Please enter a price.", "error");
+    return;
+}
+
+if(!imageFile){
+    toast("Please choose a template image.", "error");
+    return;
+}
+
+if(!downloadUrl){
+    toast("Please upload the template file (.zip/.rar/.7z).", "error");
+    return;
+}
+
+if(typeof showLoading === "function") showLoading();
+
+try{
+
+/* upload image */
+
+const imgForm = new FormData();
+imgForm.append("image", imageFile);
+
+const imgRes = await fetch("/api/upload", {
+    method:"POST",
+    body:imgForm
+});
+
+const imgData = await imgRes.json();
+
+if(!imgRes.ok || !imgData.image){
+    toast(imgData.message || "Image upload failed. Please try again.", "error");
+    return;
+}
+
+/* create the template as a Product with category "Template" —
+   this is what keeps it out of the normal storefront/search
+   while still using the exact same cart -> checkout -> order ->
+   admin-approval -> email delivery pipeline as a real product,
+   guaranteeing identical buyer behavior. */
+
+const product = {
+
+id: "TEMPLATE-" + Math.floor(100000 + Math.random() * 900000),
+
+name,
+
+price,
+
+image: imgData.image,
+
+type: "Digital",
+
+category: "Template",
+
+download: downloadUrl,
+
+version: document.getElementById("version").value,
+
+liveDemoUrl: document.getElementById("liveDemoUrl").value,
+
+screenshots: document.getElementById("screenshots").value,
+
+seller: "Admin"
+
+};
+
+const res = await fetch("/api/products", {
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body: JSON.stringify(product)
+
+});
+
+const data = await res.json();
+
+if(!res.ok){
+    toast(data.message || "Could not create the template.", "error");
+    return;
+}
+
+toast("Template added ✅", "success");
+
+setTimeout(() => {
+    window.location.href = "template-details?id=" + product.id;
+}, 1200);
+
+}catch(err){
+
+toast("Something went wrong. Please try again.", "error");
+
+}finally{
+
+if(typeof hideLoading === "function") hideLoading();
+
+}
+
+}
+
+</script>
+
+</body>
+</html>

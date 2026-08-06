@@ -37,6 +37,11 @@ type:String,
 default:""
 },
 
+deliveredDownload:{
+type:String,
+default:""
+},
+
 createdAt:{
 type:Date,
 default:Date.now

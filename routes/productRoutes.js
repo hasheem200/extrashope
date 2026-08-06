@@ -26,6 +26,15 @@ function sanitizeProduct(product, user) {
         delete obj.login;
         delete obj.password;
 
+        // SECURITY: "download" is the actual paid-content delivery
+        // link (e.g. a Cloudinary URL to a source-code zip) — this
+        // must never be visible before purchase, exactly like
+        // login/password above. It gets delivered separately and
+        // securely at order-approval time (see routes/orderRoutes.js
+        // -> order.deliveredDownload), never carried through the
+        // public product listing, the cart, or the order itself.
+        delete obj.download;
+
         // IMPORTANT: the storefront (product.html / app.js) reads
         // stockData just to COUNT how many units are left in stock
         // ("X in stock" / add-to-cart availability) — it never

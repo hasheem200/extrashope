@@ -186,6 +186,16 @@ if(product.type === "Digital"){
 console.log("ORDER =", order);
 console.log("PRODUCT =", product);
 
+// SECURITY: login/password/download are never present on
+// product.* here — they're stripped from every public/cart-
+// facing product response on purpose. The real, securely
+// delivered values (set only after an admin approves this
+// specific paid order) live on the ORDER itself:
+// order.deliveredLogin / deliveredPassword / deliveredDownload.
+// Each row below only renders if that value actually exists,
+// instead of showing an empty "Login:" or a broken download
+// button with no link.
+
 container.innerHTML += `
 
 <div class="admin-product">
@@ -202,19 +212,23 @@ ${product.name}
 ${product.platform || ""}
 </p>
 
+${order.deliveredLogin ? `
 <p>
-Login:${order.deliveredLogin || product.login || ""}
+Login: ${order.deliveredLogin}
 </p>
+` : ""}
 
+${order.deliveredPassword ? `
 <p>
-Password:${order.deliveredPassword || product.password || ""}
+Password: ${order.deliveredPassword}
 </p>
+` : ""}
 
-<a href="${product.download}"target="_blank">
-
+${order.deliveredDownload ? `
+<a href="${order.deliveredDownload}" target="_blank">
 <button> Download </button>
-
 </a>
+` : ""}
 
 
 </div>

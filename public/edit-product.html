@@ -153,7 +153,16 @@ placeholder="Password">
 <input
 type="text"
 id="productDownload"
-placeholder="Download Link">
+placeholder="Download Link (leave blank if uploading a file below)">
+
+<label style="display:block;margin:10px 0 5px;color:#555;font-size:14px;">
+— OR — Upload a new Downloadable File (.zip/.rar/.7z) to replace it
+</label>
+
+<input
+type="file"
+id="downloadFile"
+accept=".zip,.rar,.7z">
 
 <textarea
 id="productStockData"
@@ -237,6 +246,54 @@ document.getElementById(
 ).value = product.stockData || "";
 
 }
+
+/* DOWNLOADABLE FILE — upload immediately on selection and
+   auto-fill the Download Link field with the resulting URL. */
+
+document.getElementById("downloadFile")
+.addEventListener("change", async function(){
+
+const file = this.files[0];
+
+if(!file) return;
+
+const form = new FormData();
+form.append("file", file);
+
+if(typeof showLoading === "function") showLoading();
+
+try{
+
+const res = await fetch("/api/upload/download-file", {
+    method:"POST",
+    body:form
+});
+
+const data = await res.json();
+
+if(!res.ok || !data.file){
+    toast(data.message || "File upload failed. Please try again.", "error");
+    this.value = "";
+    return;
+}
+
+document.getElementById("productDownload").value = data.file;
+
+toast("File uploaded ✅", "success");
+
+}catch(err){
+
+toast("File upload failed. Please try again.", "error");
+
+this.value = "";
+
+}finally{
+
+if(typeof hideLoading === "function") hideLoading();
+
+}
+
+});
 
 async function updateProduct(){
 

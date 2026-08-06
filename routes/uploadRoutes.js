@@ -163,6 +163,127 @@ message:"Upload Error"
 }
 );
 
+/*
+  ==============================================================
+  DIGITAL DELIVERY FILE UPLOAD — for products sold as a downloadable
+  file (e.g. a template's source code .zip), instead of/alongside
+  login:password credentials. Used from the seller/admin product
+  forms. Stores the file the same way images are stored (Local disk
+  or Cloudinary, based on Storage Settings) and returns a URL that
+  gets saved on the product's "download" field. When an order for
+  that product is approved, that URL is what gets emailed to the
+  buyer (see routes/orderRoutes.js).
+
+  Disk-backed (not memory) since these files can be much larger
+  than a product photo — buffering a big zip fully in RAM before
+  writing it isn't a good idea on a small hosting instance.
+  ==============================================================
+*/
+
+const ALLOWED_DOWNLOAD_EXTENSIONS = [".zip", ".rar", ".7z"];
+
+const downloadFileStorage = multer.diskStorage({
+
+    destination: (req, file, cb) => {
+        cb(null, "public/uploads");
+    },
+
+    filename: (req, file, cb) => {
+        const safeOriginal = path.basename(file.originalname);
+        cb(null, Date.now() + "-" + safeOriginal);
+    }
+
+});
+
+const uploadDownloadFile = multer({
+
+    storage: downloadFileStorage,
+
+    limits: {
+        fileSize: 150 * 1024 * 1024 // 150MB — plenty for a source-code zip
+    },
+
+    fileFilter: (req, file, cb) => {
+
+        const ext = path.extname(file.originalname).toLowerCase();
+
+        if (!ALLOWED_DOWNLOAD_EXTENSIONS.includes(ext)) {
+            return cb(new Error("Only .zip, .rar, or .7z files are allowed for downloadable products."));
+        }
+
+        cb(null, true);
+
+    }
+
+});
+
+router.post(
+"/download-file",
+verifyToken,
+uploadDownloadFile.single("file"),
+async (req, res) => {
+
+try {
+
+    if (!req.file) {
+        return res.status(400).json({ message: "No valid file was uploaded." });
+    }
+
+    const localPath = req.file.path;
+
+    const settings = await Settings.findOne();
+
+    let fileUrl;
+
+    if (settings?.storageSettings?.storageType === "cloudinary") {
+
+        cloudinary.config({
+            cloud_name: settings.storageSettings.cloudName,
+            api_key: settings.storageSettings.cloudApiKey,
+            api_secret: settings.storageSettings.cloudApiSecret
+        });
+
+        const uploaded = await cloudinary.uploader.upload(localPath, {
+            folder: "extrashope/downloads",
+            resource_type: "raw" // not an image — Cloudinary needs this for zips/archives
+        });
+
+        fs.unlinkSync(localPath);
+
+        fileUrl = uploaded.secure_url;
+
+    } else {
+
+        fileUrl = "/uploads/" + req.file.filename;
+
+        if (
+            settings?.siteSettings?.uploadsBaseUrl &&
+            settings.siteSettings.uploadsBaseUrl.trim() !== ""
+        ) {
+
+            let base = settings.siteSettings.uploadsBaseUrl.trim();
+
+            if (!base.endsWith("/")) base += "/";
+
+            fileUrl = base + req.file.filename;
+
+        }
+
+    }
+
+    res.json({ file: fileUrl });
+
+} catch (err) {
+
+    console.log(err);
+
+    res.status(500).json({ message: "Upload Error" });
+
+}
+
+}
+);
+
 router.use((err,req,res,next)=>{
 
 console.log("UPLOAD ERROR:");
