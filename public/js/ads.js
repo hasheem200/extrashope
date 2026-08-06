@@ -273,7 +273,7 @@ function showRightRectangle(){
     <img
     src="${ad.bannerImage}"
     style="
-    width:190px;
+    width:300px;
     height:280px;
     border-radius:10px;
     object-fit:cover;
