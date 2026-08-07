@@ -100,24 +100,15 @@ router.put("/site", verifyToken, requireRole("admin"), async (req, res) => {
 
         ...(settings.siteSettings || {}),
 
-        ...(req.body.siteSettings || {})
+        ...(req.body.siteSettings || {}),
 
-    };
+        storageSettings: {
 
-    // BUG FIX: storageSettings is a top-level sibling field on the
-    // Settings schema (not nested inside siteSettings), and that's
-    // also where uploadRoutes.js and fileManagerRoutes.js actually
-    // read Storage Type/Cloud Name/API Key/Secret from. Saving it
-    // nested here (the old behavior) meant it always landed
-    // somewhere nothing ever reads — Storage Settings changes from
-    // the admin panel would silently have zero effect, which would
-    // make the Cloudinary File Manager feature unreachable (valid
-    // credentials could never actually be saved).
-    settings.storageSettings = {
+            ...(settings.siteSettings?.storageSettings || {}),
 
-        ...(settings.storageSettings || {}),
+            ...(req.body.storageSettings || {})
 
-        ...(req.body.storageSettings || {})
+        }
 
     };
 

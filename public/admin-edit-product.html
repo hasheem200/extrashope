@@ -135,35 +135,6 @@ placeholder="Download Link"
 style="width:100%;height:100px;">
 </textarea>
 
-<label style="display:block;margin:10px 0 5px;color:#555;font-size:14px;">
-— OR — Upload a new Downloadable File (.zip/.rar/.7z) to replace it
-</label>
-
-<input
-type="file"
-id="downloadFile"
-accept=".zip,.rar,.7z">
-
-<br><br>
-
-<hr style="margin:20px 0;border:none;border-top:1px solid #eee;">
-
-<label style="display:block;margin-bottom:5px;color:#555;font-size:14px;">
-Showcase Page Details (optional — only needed if this product uses the rich "Template Details" page)
-</label>
-
-<input id="version" placeholder="Version (e.g. 1.0.0)">
-<br><br>
-
-<input id="liveDemoUrl" placeholder="Live Demo URL">
-<br><br>
-
-<textarea
-id="screenshots"
-placeholder="Admin Panel screenshot URLs, one per line"
-style="width:100%;height:100px;">
-</textarea>
-
 <br><br>
 
 <button onclick="saveProduct()">
@@ -225,64 +196,7 @@ product.image || "";
 document.getElementById("download").value =
 product.download || "";
 
-document.getElementById("version").value =
-product.version || "";
-
-document.getElementById("liveDemoUrl").value =
-product.liveDemoUrl || "";
-
-document.getElementById("screenshots").value =
-product.screenshots || "";
-
 }
-
-/* DOWNLOADABLE FILE — upload immediately on selection and
-   auto-fill the Download Link field with the resulting URL. */
-
-document.getElementById("downloadFile")
-.addEventListener("change", async function(){
-
-const file = this.files[0];
-
-if(!file) return;
-
-const form = new FormData();
-form.append("file", file);
-
-if(typeof showLoading === "function") showLoading();
-
-try{
-
-const res = await fetch("/api/upload/download-file", {
-    method:"POST",
-    body:form
-});
-
-const data = await res.json();
-
-if(!res.ok || !data.file){
-    toast(data.message || "File upload failed. Please try again.", "error");
-    this.value = "";
-    return;
-}
-
-document.getElementById("download").value = data.file;
-
-toast("File uploaded ✅", "success");
-
-}catch(err){
-
-toast("File upload failed. Please try again.", "error");
-
-this.value = "";
-
-}finally{
-
-if(typeof hideLoading === "function") hideLoading();
-
-}
-
-});
 
 async function saveProduct(){
 
@@ -315,16 +229,7 @@ image:
 document.getElementById("image").value,
 
 download:
-document.getElementById("download").value,
-
-version:
-document.getElementById("version").value,
-
-liveDemoUrl:
-document.getElementById("liveDemoUrl").value,
-
-screenshots:
-document.getElementById("screenshots").value
+document.getElementById("download").value
 
 })
 

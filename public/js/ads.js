@@ -146,7 +146,7 @@ function showRightLong(){
     <img
     src="${ad.bannerImage}"
     style="
-    width:300px;
+    width:200px;
     height:600px;
     border-radius:10px;
     object-fit:cover;
@@ -273,7 +273,7 @@ function showRightRectangle(){
     <img
     src="${ad.bannerImage}"
     style="
-    width:300px;
+    width:190px;
     height:280px;
     border-radius:10px;
     object-fit:cover;
@@ -306,7 +306,7 @@ function showLeftRectangle(){
     <img
     src="${ad.bannerImage}"
     style="
-    width:300px;
+    width:190px;
     height:280px;
     border-radius:10px;
     object-fit:cover;

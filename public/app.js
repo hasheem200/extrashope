@@ -23,12 +23,7 @@ const res = await fetch("/api/products");
 
 const products = await res.json();
 
-// Templates (added via Admin -> Add Template) have their own
-// dedicated buyer page and must never show up in the normal
-// storefront grid, search, or category filters.
-const storefrontProducts = products.filter(p => p.category !== "Template");
-
-allProducts = storefrontProducts.sort(
+allProducts = products.sort(
 (a,b)=>
 new Date(b.createdAt) - new Date(a.createdAt)
 );
@@ -400,9 +395,7 @@ await fetch("/api/products/promoted/list");
 const products =
 await res.json();
 
-const storefrontOnly = products.filter(p => p.category !== "Template");
-
-console.log("PROMOTED:", storefrontOnly);
+console.log("PROMOTED:", products);
 
 const container =
 document.getElementById("promotedProducts");
@@ -413,7 +406,7 @@ if(!container) return;
 
 container.innerHTML = "";
 
-storefrontOnly.forEach(product => {
+products.forEach(product => {
 
 container.innerHTML += `
 

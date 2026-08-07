@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Buy Template</title>
+
+<link rel="stylesheet" href="style.css">
+
+<style>
+
+body{
+background:#111;
+color:white;
+font-family:Arial;
+}
+
+.container{
+max-width:1200px;
+margin:auto;
+padding:30px;
+}
+
+.product{
+display:grid;
+grid-template-columns:450px 1fr;
+gap:40px;
+}
+
+.main-image img{
+width:100%;
+border-radius:12px;
+}
+
+.price{
+font-size:35px;
+color:#00ff99;
+margin:15px 0;
+}
+
+button{
+padding:14px 25px;
+background:#0d6efd;
+color:white;
+border:none;
+border-radius:8px;
+cursor:pointer;
+font-size:18px;
+}
+
+button:hover{
+background:#0b5ed7;
+}
+
+.gallery{
+display:flex;
+gap:10px;
+margin-top:15px;
+flex-wrap:wrap;
+}
+
+.gallery img{
+width:90px;
+height:90px;
+object-fit:cover;
+cursor:pointer;
+border-radius:8px;
+border:2px solid #333;
+}
+
+.gallery img:hover{
+border-color:#0d6efd;
+}
+
+</style>
+
+<script src="js/auth-fetch.js"></script>
+<script src="js/ui-helpers.js"></script>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="product">
+
+<div>
+
+<div class="main-image">
+<img id="mainImage">
+</div>
+
+<div class="gallery">
+
+<a id="link1" target="_blank">
+    <img id="img1">
+</a>
+
+<a id="link2" target="_blank">
+    <img id="img2">
+</a>
+
+<a id="link3" target="_blank">
+    <img id="img3">
+</a>
+
+<a id="link4" target="_blank">
+    <img id="img4">
+</a>
+
+<a id="link5" target="_blank">
+    <img id="img5">
+</a>
+
+<a id="link6" target="_blank">
+    <img id="img6">
+</a>
+
+<a id="link7" target="_blank">
+    <img id="img7">
+</a>
+
+<a id="link8" target="_blank">
+    <img id="img8">
+</a>
+
+</div>
+
+</div>
+
+<div>
+
+<h1 id="name"></h1>
+
+<div class="price" id="price"></div>
+
+<p id="description"></p>
+
+<button onclick="buyTemplate()">
+Add To Cart
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+<div id="imageViewer" class="viewer" onclick="closeViewer()">
+    <img id="viewerImage">
+</div>
+
+<script>
+
+let product;
+
+async function loadTemplate(){
+
+const products =
+await fetch("/api/products").then(r=>r.json());
+
+product =
+products.find(p=>p.name==="My Store");
+
+if(!product){
+
+document.body.innerHTML="<h1>Template not found</h1>";
+return;
+
+}
+
+document.getElementById("name").innerText=product.name;
+
+document.getElementById("price").innerText="$"+product.price;
+
+document.getElementById("description").innerText=
+"Professional eCommerce template with Admin Panel.";
+
+document.getElementById("mainImage").src=product.image;
+
+/*
+ضع روابط صورك هنا
+*/
+
+const images=[
+
+product.image,
+
+"https://res.cloudinary.com/zkq0psdl/image/upload/v1786110913/extrashope/1786110913338-Admin%20Dashboard%201.jpg",
+
+"https://res.cloudinary.com/zkq0psdl/image/upload/v1786110972/extrashope/1786110971654-Admin%20Dashboard%202.jpg",
+
+"https://res.cloudinary.com/zkq0psdl/image/upload/v1786111034/extrashope/1786111034531-Admin%20Dashboard%203.jpg",
+
+"https://res.cloudinary.com/zkq0psdl/image/upload/v1786111110/extrashope/1786111109993-Admin%20Dashboard%204.jpg",
+
+"https://res.cloudinary.com/zkq0psdl/image/upload/v1786111203/extrashope/1786111203621-Admin%20Dashboard%205.jpg",
+
+"https://res.cloudinary.com/zkq0psdl/image/upload/v1786111461/extrashope/1786111461416-Admin%20Dashboard%206.jpg",
+
+"https://res.cloudinary.com/zkq0psdl/image/upload/v1786111486/extrashope/1786111486621-Admin%20Dashboard%207.jpg",
+
+"https://res.cloudinary.com/zkq0psdl/image/upload/v1786111524/extrashope/1786111524417-Seller%20Dashboard%201.jpg",
+
+
+
+];
+
+images.forEach((img, i) => {
+
+    const image = document.getElementById("img" + (i + 1));
+
+    image.src = img;
+
+    image.onclick = () => {
+
+        document.getElementById("viewerImage").src = img;
+        document.getElementById("imageViewer").style.display = "flex";
+
+    };
+
+});
+
+} // نهاية loadTemplate
+
+function closeViewer(){
+
+    document.getElementById("imageViewer").style.display = "none";
+
+}
+
+function changeImage(src){
+
+document.getElementById("mainImage").src=src;
+
+}
+
+function buyTemplate(){
+
+let cart=
+JSON.parse(localStorage.getItem("cart"))||[];
+
+cart.push(product);
+
+localStorage.setItem("cart",JSON.stringify(cart));
+
+toast("Added To Cart","success");
+
+}
+
+loadTemplate();
+
+</script>
+
+</body>
+</html>

@@ -218,55 +218,25 @@ console.log(dbProduct.stockData);
 
 }
 
-// SECURITY: this is the ONLY place the actual download link ever
-// gets attached to an order — it comes from the trusted, freshly
-// re-fetched server-side product record (dbProduct), never from
-// whatever the buyer's browser sent. The public product API and
-// the cart/order never carry the real link (see sanitizeProduct in
-// productRoutes.js), so there's no way to get it without an admin
-// actually approving a real, paid order for it.
-if(dbProduct && dbProduct.download && dbProduct.download.trim() !== ""){
-
-order.deliveredDownload =
-dbProduct.download;
-
-await order.save();
-
-}
-
 order.status = "Approved";
 
 await order.save();
-
-// SECURITY FIX: this used to read "download" straight off
-// order.products (client-supplied cart data) — but that field is
-// now correctly stripped from every public/cart-facing response
-// (see sanitizeProduct in productRoutes.js), so it would always be
-// empty here. The real link now lives on order.deliveredDownload,
-// set a few lines above from the trusted server-side product
-// record — that's what gets emailed.
-const hasDownload = !!order.deliveredDownload;
 
 notifyUserByEmail(order.customer, {
     type: "success",
     title: "Your Order Has Been Approved! 🎉",
     message: order.deliveredLogin
         ? "Your payment was verified and your product is ready. Your access details are below."
-        : hasDownload
-            ? "Your payment was verified. Your download link is below."
-            : "Your payment was verified and your order has been processed.",
+        : "Your payment was verified and your order has been processed.",
     details: {
         Total: `$${Number(order.total || 0).toFixed(2)}`,
         ...(order.deliveredLogin ? {
             Login: order.deliveredLogin,
             Password: order.deliveredPassword
-        } : {}),
-        ...(hasDownload ? {
-            "Download Link": `<a href="${order.deliveredDownload}">${order.deliveredDownload}</a>`
         } : {})
     },
-    actionUrl: `${req.protocol}://${req.get("host")}/${hasDownload ? "downloads" : "orders"}`,
-    actionLabel: hasDownload ? "View Your Downloads" : "View Your Order"
+    actionUrl: `${req.protocol}://${req.get("host")}/orders`,
+    actionLabel: "View Your Order"
 });
 
 // PERFORMANCE: fetch Settings ONCE before the loop instead of

@@ -9,7 +9,6 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const path = require("path");
-const fs = require("fs");
 const compression = require("compression");
 const User = require("./models/User");
 const Settings = require("./models/Settings");
@@ -54,26 +53,6 @@ app.use((req, res, next) => {
    is exactly when you want a health check to be informative. */
 app.get("/health", (req, res) => {
     res.json({ status: "ok", uptime: process.uptime() });
-});
-
-/* Serves the project README so the "Documentation" modal on the
-   Template Details page can show it formatted, instead of forcing
-   a raw file download. Public — it's just project documentation,
-   nothing sensitive in it. */
-app.get("/api/readme", (req, res) => {
-
-    const readmePath = path.join(__dirname, "README.md");
-
-    fs.readFile(readmePath, "utf-8", (err, data) => {
-
-        if (err) {
-            return res.status(404).json({ message: "README not found" });
-        }
-
-        res.json({ content: data });
-
-    });
-
 });
 
 app.use(express.json());

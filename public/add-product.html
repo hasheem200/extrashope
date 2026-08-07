@@ -115,7 +115,6 @@ href="style.css">
 <a href="/">Home</a>
 <a href="admin-Products-Manager">Products Manager</a>
 <a href="add-product">Add Product</a>
-<a href="admin-add-template">🧩 Add Template</a>
 <a href="admin-orders">Pending Orders</a>
 <a href="admin-payment">payment</a>
 <a href="admin">Admin Panel</a>
@@ -313,32 +312,7 @@ placeholder="Password">
 
 <input type="text"
 id="productDownload"
-placeholder="Download Link (leave blank if uploading a file below)">
-
-<label style="display:block;margin:10px 0 5px;color:#555;font-size:14px;">
-— OR — Upload a Downloadable File (.zip/.rar/.7z, e.g. source code/template). This fills in the link above automatically once selected.
-</label>
-
-<input
-type="file"
-id="downloadFile"
-accept=".zip,.rar,.7z">
-
-<hr style="margin:20px 0;border:none;border-top:1px solid #eee;">
-
-<label style="display:block;margin-bottom:5px;color:#555;font-size:14px;">
-Showcase Page Details (optional — only needed if this product uses the rich "Template Details" page)
-</label>
-
-<input id="version" placeholder="Version (e.g. 1.0.0)">
-
-<input id="liveDemoUrl" placeholder="Live Demo URL">
-
-<textarea
-id="screenshots"
-placeholder="Admin Panel screenshot URLs, one per line"
-style="width:100%;height:100px;">
-</textarea>
+placeholder="Download Link">
 
 <button onclick="addProduct()">
 Add Product
@@ -385,54 +359,6 @@ async function approve(id){
     loadAds();
 
 }
-
-/* DOWNLOADABLE FILE — upload immediately on selection and
-   auto-fill the Download Link field with the resulting URL. */
-
-document.getElementById("downloadFile")
-.addEventListener("change", async function(){
-
-const file = this.files[0];
-
-if(!file) return;
-
-const form = new FormData();
-form.append("file", file);
-
-if(typeof showLoading === "function") showLoading();
-
-try{
-
-const res = await fetch("/api/upload/download-file", {
-    method:"POST",
-    body:form
-});
-
-const data = await res.json();
-
-if(!res.ok || !data.file){
-    toast(data.message || "File upload failed. Please try again.", "error");
-    this.value = "";
-    return;
-}
-
-document.getElementById("productDownload").value = data.file;
-
-toast("File uploaded ✅", "success");
-
-}catch(err){
-
-toast("File upload failed. Please try again.", "error");
-
-this.value = "";
-
-}finally{
-
-if(typeof hideLoading === "function") hideLoading();
-
-}
-
-});
 
 async function addProduct(){
 
@@ -503,15 +429,6 @@ document.getElementById("productPassword").value,
 
 download:
 document.getElementById("productDownload").value,
-
-version:
-document.getElementById("version").value,
-
-liveDemoUrl:
-document.getElementById("liveDemoUrl").value,
-
-screenshots:
-document.getElementById("screenshots").value,
 
 seller:"Admin"
 
