@@ -8,6 +8,7 @@ require("dotenv").config();
 
 const express = require("express");
 const mongoose = require("mongoose");
+const fs = require("fs");
 const path = require("path");
 const compression = require("compression");
 const User = require("./models/User");
@@ -75,32 +76,7 @@ app.get(/^\/(.+)\.html$/, (req, res) => {
 
 });
 
-app.use(express.static(
-path.join(__dirname,"public"),
-{
-    extensions: ["html"], // /product now resolves to product.html on disk
 
-    /* PERFORMANCE: cache static assets so the browser doesn't
-       re-download them on every visit.
-       - Images/uploads: long cache (7 days) — filenames are
-         timestamp-based, so a new upload is always a new URL.
-       - CSS/JS: short cache (10 min) — this project is still
-         being actively edited, so a long cache here would hide
-         your own fixes from your browser after each deploy.
-       - HTML: no cache — always revalidate, pages change often. */
-    setHeaders: (res, filePath) => {
-
-        if (filePath.endsWith(".html")) {
-            res.setHeader("Cache-Control", "no-cache");
-        } else if (filePath.endsWith(".css") || filePath.endsWith(".js")) {
-            res.setHeader("Cache-Control", "public, max-age=600"); // 10 minutes
-        } else {
-            res.setHeader("Cache-Control", "public, max-age=604800"); // 7 days
-        }
-
-    }
-}
-));
 
 
 /* MONGODB */
@@ -175,6 +151,9 @@ require("./routes/robotsRoutes");
 const sitemapRoutes =
 require("./routes/sitemapRoutes");
 
+const pageAccessRoutes =
+require("./routes/pageAccessRoutes");
+
 
 
 /* API */
@@ -205,9 +184,51 @@ app.use("/api/file-manager",fileManagerRoutes);
 
 app.use("/api/backup",backupRoutes);
 
+app.use("/api/page-access", pageAccessRoutes);
+
 app.use("/robots.txt", robotsRoutes);
 
 app.use("/sitemap.xml", sitemapRoutes);
+
+/* STATIC FILES */
+
+app.use(express.static(
+    path.join(__dirname, "public"),
+    {
+        extensions: ["html"],
+
+        setHeaders: (res, filePath) => {
+
+            if (filePath.endsWith(".html")) {
+
+                res.setHeader(
+                    "Cache-Control",
+                    "no-cache"
+                );
+
+            } else if (
+                filePath.endsWith(".css") ||
+                filePath.endsWith(".js")
+            ) {
+
+                res.setHeader(
+                    "Cache-Control",
+                    "public, max-age=600"
+                );
+
+            } else {
+
+                res.setHeader(
+                    "Cache-Control",
+                    "public, max-age=604800"
+                );
+
+            }
+
+        }
+
+    }
+));
 
 /* HOME */
 

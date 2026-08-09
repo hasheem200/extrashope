@@ -5,6 +5,32 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Buy Template</title>
 
+<link id="faviconLink" rel="icon" href="/favicon.ico">
+
+<script>
+async function applySiteSettings() {
+    try {
+        const settingsRes = await fetch("/api/settings");
+        const settingsData = await settingsRes.json();
+        const s = settingsData.siteSettings || {};
+        const siteName = s.siteName || "My Site";
+        const favicon = s.favicon || "";
+
+        window.__siteName = siteName;
+
+        if (favicon) {
+            const faviconLink = document.getElementById('faviconLink');
+            if (faviconLink) faviconLink.href = favicon;
+        }
+
+    } catch (error) {
+        console.error('Failed to apply settings:', error);
+        window.__siteName = "My Site";
+    }
+}
+document.addEventListener('DOMContentLoaded', applySiteSettings);
+</script>
+
 <link rel="stylesheet" href="style.css">
 
 <style>
@@ -72,14 +98,130 @@ border:2px solid #333;
 border-color:#0d6efd;
 }
 
+.readme-btn{
+background:#222;
+border:1px solid #444;
+margin-top:12px;
+display:inline-flex;
+align-items:center;
+gap:8px;
+}
+
+.readme-btn:hover{
+background:#2c2c2c;
+}
+
+.readme-overlay{
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.75);
+z-index:999;
+align-items:center;
+justify-content:center;
+padding:30px 15px;
+}
+
+.readme-modal{
+background:#181818;
+color:#eee;
+max-width:760px;
+width:100%;
+max-height:85vh;
+overflow-y:auto;
+border-radius:14px;
+border:1px solid #333;
+padding:0;
+}
+
+.readme-header{
+position:sticky;
+top:0;
+background:#181818;
+border-bottom:1px solid #333;
+padding:20px 28px;
+display:flex;
+align-items:center;
+justify-content:space-between;
+}
+
+.readme-header h2{
+margin:0;
+font-size:22px;
+}
+
+.readme-close{
+background:none;
+border:none;
+color:#aaa;
+font-size:24px;
+cursor:pointer;
+padding:0 4px;
+line-height:1;
+}
+
+.readme-close:hover{
+color:white;
+background:none;
+}
+
+.readme-body{
+padding:10px 28px 30px 28px;
+line-height:1.7;
+font-size:15px;
+color:#ddd;
+}
+
+.readme-body h3{
+color:#0d6efd;
+margin-top:26px;
+margin-bottom:8px;
+font-size:17px;
+}
+
+.readme-body h3:first-child{
+margin-top:20px;
+}
+
+.readme-body p{
+margin:6px 0 12px 0;
+color:#ccc;
+}
+
+.readme-body ul{
+margin:0 0 12px 0;
+padding-left:20px;
+}
+
+.readme-body li{
+margin:6px 0;
+color:#ccc;
+}
+
+.readme-badge{
+display:inline-block;
+background:rgba(13,110,253,0.15);
+color:#5b9dff;
+border:1px solid rgba(13,110,253,0.4);
+border-radius:20px;
+padding:3px 12px;
+font-size:12px;
+margin-bottom:16px;
+}
+
 </style>
 
 <script src="js/auth-fetch.js"></script>
+<script src="js/page-access.js"></script>
 <script src="js/ui-helpers.js"></script>
 
 </head>
 
 <body>
+<<<<<<< HEAD
  <header>
 
 <div class="logo">
@@ -99,6 +241,22 @@ border-color:#0d6efd;
 
 </header>
     
+=======
+    <header>
+    <div class="logo">
+💻 Buy Template
+</div>
+  <nav>
+  
+        <a href="/">Store</a>
+        <a href="cart">Cart</a>
+    </nav>
+</div>
+    
+</nav>
+
+</header>
+>>>>>>> bb6c525 (Update ExtraShope)
 <div class="container">
 
 <div class="product">
@@ -167,14 +325,93 @@ border-color:#0d6efd;
 Add To Cart
 </button>
 
-</div>
+<br>
+
+<button class="readme-btn" onclick="openReadme()">
+📄 Readme / Documentation
+</button>
 
 </div>
 
+</div>
+
+<div class="td-section">
+    <h2><span class="td-num"></span>What You'll Get</h2>
+    <div class="td-cards">
+        <div class="td-card"><span class="check">✔</span>Full Source Code</div>
+        <div class="td-card"><span class="check">✔</span>Admin Dashboard</div>
+        <div class="td-card"><span class="check">✔</span>Seller Dashboard</div>
+        <div class="td-card"><span class="check">✔</span>Fully Responsive</div>
+        <div class="td-card"><span class="check">✔</span>Free Updates</div>
+        <div class="td-card"><span class="check">✔</span>Installation Guide</div>
+    </div>
+</div>
 </div>
 
 <div id="imageViewer" class="viewer" onclick="closeViewer()">
     <img id="viewerImage">
+</div>
+
+<div id="readmeOverlay" class="readme-overlay" onclick="if(event.target===this)closeReadme()">
+<div class="readme-modal">
+
+<div class="readme-header">
+<h2>ExtraShope — Readme / Documentation</h2>
+<button class="readme-close" onclick="closeReadme()">✕</button>
+</div>
+
+<div class="readme-body">
+
+<span class="readme-badge">Professional eCommerce Template</span>
+
+<h3>Overview</h3>
+<p>
+ExtraShope is a complete, ready-to-deploy multi-vendor eCommerce
+marketplace. It includes a public storefront, buyer accounts,
+seller dashboards, and a full admin control panel — everything
+needed to run a digital or physical products marketplace out of
+the box.
+</p>
+
+<h3>What's Included</h3>
+<ul>
+<li>Public storefront with product listing, search, product details, cart and checkout</li>
+<li>Buyer accounts — orders, wishlist, reviews, notifications, wallet</li>
+<li>Seller dashboard — add/manage products, shop settings, orders, withdrawals</li>
+<li>Admin panel — manage users, products, orders, ads, coupons, banners, payments</li>
+<li>Page Access Control — restrict which roles (Visitor/Buyer/Seller/Admin) can view each page</li>
+<li>Built-in wallet, withdrawal requests, and payment proof workflow</li>
+<li>Notification system for buyers, sellers, and admin</li>
+<li>Site-wide backup/restore tool (export & import full database)</li>
+<li>SEO-ready: sitemap.xml and robots.txt generated automatically</li>
+</ul>
+
+<h3>Tech Stack</h3>
+<ul>
+<li>Backend: Node.js, Express, MongoDB (Mongoose)</li>
+<li>Authentication: JWT-based, role protected (visitor / buyer / seller / admin)</li>
+<li>Frontend: Plain HTML/CSS/JS — no build step required</li>
+<li>Image storage: Cloudinary / Cloudflare R2 compatible uploads</li>
+</ul>
+
+<h3>Getting Started</h3>
+<ul>
+<li>Upload the project files to your hosting (or run <code>npm install</code> locally)</li>
+<li>Set your MongoDB connection string in the <code>MONGO_URI</code> environment variable</li>
+<li>Start the server with <code>node server.js</code> (or your host's Node.js app runner)</li>
+<li>Log in as admin from <code>/admin</code> to configure site settings, payments, and access rules</li>
+</ul>
+
+<h3>Support</h3>
+<p>
+For setup help, customization, or questions about this template,
+use the Support option from your dashboard after purchase, or
+contact the seller directly through your order page.
+</p>
+
+</div>
+
+</div>
 </div>
 
 <script>
@@ -260,6 +497,18 @@ function closeViewer(){
 
 }
 
+function openReadme(){
+
+    document.getElementById("readmeOverlay").style.display = "flex";
+
+}
+
+function closeReadme(){
+
+    document.getElementById("readmeOverlay").style.display = "none";
+
+}
+
 function changeImage(src){
 
 document.getElementById("mainImage").src=src;
@@ -278,6 +527,7 @@ localStorage.setItem("cart",JSON.stringify(cart));
 toast("Added To Cart","success");
 
 }
+
 
 loadTemplate();
 

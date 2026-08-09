@@ -63,8 +63,12 @@ document.addEventListener('DOMContentLoaded', applySiteSettings);
 </script>
 <link rel="stylesheet" href="style.css">
 <script src="js/auth-fetch.js"></script>
+<script src="js/page-access.js"></script>
 <script src="js/ui-helpers.js"></script>
 <script src="js/seo.js"></script>
+
+ 
+    
 </head>
 
 <body>
@@ -291,29 +295,128 @@ text-align:center;
 <!-- ----------------- خط بداية------------- -->
 
 
+
 <div class="box">
 
-<img class="userAvSidebar"
-src="https://yts.do.am/.s/t/1816/unknow.png"
-alt="avatar">
+
+<img
+    class="userAvSidebar"
+    src="https://yts.do.am/.s/t/1816/unknow.png"
+    alt="avatar"
+>
 
 <div id="welcomeText">
-Welcome, Guest
+    Welcome, Guest
 </div>
 
 <div id="userId"></div>
 
 <span id="userArea">
-
-<a href="login"
-class="login-btn">
-Login
-</a>
-
+    <a href="login" class="login-btn">
+        Login
+    </a>
 </span>
-			
-			
+
+
 </div>
+
+<script>
+function updateUserSidebar() {
+
+    const welcomeText =
+        document.getElementById("welcomeText");
+
+    const userId =
+        document.getElementById("userId");
+
+    const userArea =
+        document.getElementById("userArea");
+
+    const user =
+        JSON.parse(
+            localStorage.getItem("user") || "null"
+        );
+
+    /* Visitor */
+    if (!user) {
+
+        welcomeText.textContent =
+            "Welcome, Guest";
+
+        userId.textContent = "";
+
+        userArea.innerHTML = `
+            <a href="login" class="login-btn">
+                Login
+            </a>
+        `;
+
+        return;
+    }
+
+    /* Logged-in user */
+
+    const nickname =
+        user.nickname || "User";
+
+    const role =
+        (user.role || "buyer").toLowerCase();
+
+    let roleText = "";
+
+    if (role === "admin") {
+        roleText = "🔴 Admin";
+    }
+    else if (role === "seller") {
+        roleText = "🟢 Seller";
+    }
+    else if (role === "buyer") {
+        roleText = "🔵 Buyer";
+    }
+    else {
+        roleText = "👤 User";
+    }
+
+    welcomeText.innerHTML =
+        `Welcome, <b>${nickname}</b>!`;
+
+    userId.innerHTML =
+        `${roleText}`;
+
+    userArea.innerHTML = `
+        <button
+            type="button"
+            class="login-btn"
+            onclick="logoutSidebar()">
+            Logout
+        </button>
+    `;
+}
+
+
+/* Logout */
+function logoutSidebar() {
+
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+
+    sessionStorage.removeItem(
+        "__pageAccessRedirect"
+    );
+
+    sessionStorage.removeItem(
+        "__pageAccessBlocked"
+    );
+
+    window.location.href = "/index.html";
+}
+
+
+/* Run */
+updateUserSidebar();
+</script>
+
+
 <!-- ------------------end خط نهاية------------>
 
 <!-- ----------------- خط بداية------------- -->

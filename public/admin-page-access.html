@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Page Access Control</title>
+
+<link rel="stylesheet" href="style.css">
+<script src="js/auth-fetch.js"></script>
+<script src="js/page-access.js"></script>
+<script src="js/auth.js"></script>
+
+<style>
+body{
+    background:#111;
+    color:#fff;
+    font-family:Arial,sans-serif;
+}
+
+.container{
+    max-width:1200px;
+    margin:auto;
+    padding:30px;
+}
+
+.card{
+    background:#1b1b1b;
+    border:1px solid #333;
+    border-radius:14px;
+    padding:25px;
+    box-shadow:0 10px 30px rgba(0,0,0,.25);
+}
+
+h1{
+    margin-top:0;
+}
+
+.description{
+    color:#aaa;
+    margin-bottom:25px;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th,td{
+    padding:14px 10px;
+    border-bottom:1px solid #333;
+    text-align:center;
+}
+
+th{
+    background:#222;
+}
+
+td:first-child,
+th:first-child{
+    text-align:left;
+}
+
+.page-name{
+    font-family:monospace;
+    color:#4dabf7;
+}
+
+input[type="checkbox"]{
+    width:20px;
+    height:20px;
+    cursor:pointer;
+    accent-color:#0d6efd;
+}
+
+.public{
+    color:#00ff99;
+    font-weight:bold;
+}
+
+.protected{
+    color:#ffcc00;
+}
+
+.actions{
+    display:flex;
+    gap:10px;
+    margin-top:25px;
+    flex-wrap:wrap;
+}
+
+button{
+    border:0;
+    border-radius:8px;
+    padding:12px 20px;
+    cursor:pointer;
+    color:#fff;
+    font-size:15px;
+}
+
+.save{
+    background:#0d6efd;
+}
+
+.public-btn{
+    background:#198754;
+}
+
+.reset{
+    background:#dc3545;
+}
+
+button:hover{
+    opacity:.85;
+}
+
+#message{
+    margin-top:15px;
+    min-height:20px;
+}
+
+@media(max-width:700px){
+    .container{
+        padding:15px;
+    }
+
+    th,td{
+        padding:9px 5px;
+        font-size:13px;
+    }
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="card">
+
+<h1>🔐 Page Access Control</h1>
+
+<div class="description">
+Control which users can access each page.
+Changes are applied by the server.
+</div>
+
+<table>
+
+<thead>
+<tr>
+<th>Page</th>
+<th>Visitor</th>
+<th>Buyer</th>
+<th>Seller</th>
+<th>Admin</th>
+</tr>
+</thead>
+
+<tbody id="accessTable"></tbody>
+
+</table>
+
+<div class="actions">
+
+<button class="save" onclick="saveAccess()">
+💾 Save Changes
+</button>
+
+<button class="public-btn" onclick="makePublic()">
+🌍 Make Selected Public
+</button>
+
+<button class="reset" onclick="resetAccess()">
+↩ Reset
+</button>
+
+</div>
+
+<div id="message"></div>
+
+</div>
+
+</div>
+
+<script>
+
+const pages = [
+
+{
+    path:"/index.html",
+    visitor:true,
+    buyer:true,
+    seller:true,
+    admin:true
+},
+
+{
+    path:"/login.html",
+    visitor:true,
+    buyer:true,
+    seller:true,
+    admin:true
+},
+
+{
+    path:"/register.html",
+    visitor:true,
+    buyer:true,
+    seller:true,
+    admin:true
+},
+
+{
+    path:"/product.html",
+    visitor:true,
+    buyer:true,
+    seller:true,
+    admin:true
+},
+
+{
+    path:"/buy-template",
+    visitor:true,
+    buyer:true,
+    seller:true,
+    admin:true
+},
+
+{
+    path:"/cart.html",
+    visitor:false,
+    buyer:true,
+    seller:false,
+    admin:true
+},
+
+{
+    path:"/checkout.html",
+    visitor:false,
+    buyer:true,
+    seller:false,
+    admin:true
+},
+
+{
+    path:"/orders.html",
+    visitor:false,
+    buyer:true,
+    seller:false,
+    admin:true
+},
+
+{
+    path:"/downloads.html",
+    visitor:false,
+    buyer:true,
+    seller:false,
+    admin:true
+},
+
+{
+    path:"/seller-dashboard.html",
+    visitor:false,
+    buyer:false,
+    seller:true,
+    admin:true
+},
+
+{
+    path:"/seller-products.html",
+    visitor:false,
+    buyer:false,
+    seller:true,
+    admin:true
+},
+
+{
+    path:"/admin-manage-users.html",
+    visitor:false,
+    buyer:false,
+    seller:false,
+    admin:true
+},
+
+{
+    path:"/website-settings.html",
+    visitor:false,
+    buyer:false,
+    seller:false,
+    admin:true
+}
+
+];
+
+function render(){
+
+    const table =
+        document.getElementById("accessTable");
+
+    table.innerHTML = "";
+
+    pages.forEach((page,index)=>{
+
+        table.innerHTML += `
+
+        <tr>
+
+            <td class="page-name">
+                ${page.path}
+            </td>
+
+            <td>
+                <input
+                    type="checkbox"
+                    data-index="${index}"
+                    data-role="visitor"
+                    ${page.visitor ? "checked" : ""}
+                >
+            </td>
+
+            <td>
+                <input
+                    type="checkbox"
+                    data-index="${index}"
+                    data-role="buyer"
+                    ${page.buyer ? "checked" : ""}
+                >
+            </td>
+
+            <td>
+                <input
+                    type="checkbox"
+                    data-index="${index}"
+                    data-role="seller"
+                    ${page.seller ? "checked" : ""}
+                >
+            </td>
+
+            <td>
+                <input
+                    type="checkbox"
+                    data-index="${index}"
+                    data-role="admin"
+                    ${page.admin ? "checked" : ""}
+                >
+            </td>
+
+        </tr>
+
+        `;
+
+    });
+
+}
+
+async function loadAccess(){
+
+    try{
+
+        const res =
+            await fetch("/api/page-access");
+
+        if(!res.ok){
+            render();
+            return;
+        }
+
+        const data =
+            await res.json();
+
+        if(Array.isArray(data)){
+
+            data.forEach(saved=>{
+
+                const page =
+                    pages.find(p=>p.path===saved.path);
+
+                if(!page) return;
+
+                page.visitor =
+                    !!saved.visitor;
+
+                page.buyer =
+                    !!saved.buyer;
+
+                page.seller =
+                    !!saved.seller;
+
+                page.admin =
+                    !!saved.admin;
+
+            });
+
+        }
+
+    }catch(err){
+
+        console.error(err);
+
+    }
+
+    render();
+
+}
+
+async function saveAccess(){
+
+    const result = [];
+
+    pages.forEach((page,index)=>{
+
+        const get =
+            role => document.querySelector(
+                `input[data-index="${index}"][data-role="${role}"]`
+            ).checked;
+
+        result.push({
+
+            path:page.path,
+
+            visitor:get("visitor"),
+            buyer:get("buyer"),
+            seller:get("seller"),
+            admin:get("admin")
+
+        });
+
+    });
+
+    try{
+
+        const res =
+            await fetch("/api/page-access",{
+
+                method:"POST",
+
+                headers:{
+                    "Content-Type":"application/json"
+                },
+
+                body:JSON.stringify(result)
+
+            });
+
+        const data =
+            await res.json();
+
+        if(!res.ok){
+
+            throw new Error(
+                data.message || "Failed to save"
+            );
+
+        }
+
+        document.getElementById("message").innerHTML =
+            `<span class="public">
+            ✅ Access settings saved successfully.
+            </span>`;
+
+    }catch(err){
+
+        document.getElementById("message").innerHTML =
+            `<span style="color:#ff5555">
+            ❌ ${err.message}
+            </span>`;
+
+    }
+
+}
+
+function makePublic(){
+
+    document
+        .querySelectorAll('input[data-role="visitor"]')
+        .forEach(input=>{
+
+            input.checked = true;
+
+        });
+
+}
+
+function resetAccess(){
+
+    pages.forEach(page=>{
+
+        page.visitor = false;
+        page.buyer = false;
+        page.seller = false;
+        page.admin = false;
+
+    });
+
+    // الصفحات العامة
+    [
+        "/index.html",
+        "/login.html",
+        "/register.html",
+        "/product.html",
+        "/buy-template"
+    ].forEach(path=>{
+
+        const page =
+            pages.find(p=>p.path===path);
+
+        if(page){
+
+            page.visitor = true;
+            page.buyer = true;
+            page.seller = true;
+            page.admin = true;
+
+        }
+
+    });
+
+    // Buyer
+    [
+        "/cart.html",
+        "/checkout.html",
+        "/orders.html",
+        "/downloads.html"
+    ].forEach(path=>{
+
+        const page =
+            pages.find(p=>p.path===path);
+
+        if(page){
+            page.buyer = true;
+        }
+
+    });
+
+    // Seller
+    [
+        "/seller-dashboard.html",
+        "/seller-products.html"
+    ].forEach(path=>{
+
+        const page =
+            pages.find(p=>p.path===path);
+
+        if(page){
+            page.seller = true;
+        }
+
+    });
+
+    // Admin
+    [
+        "/admin-users.html",
+        "/admin-settings.html"
+    ].forEach(path=>{
+
+        const page =
+            pages.find(p=>p.path===path);
+
+        if(page){
+            page.admin = true;
+        }
+
+    });
+
+    render();
+
+    document.getElementById("message").innerHTML =
+        `<span style="color:#ffcc00">
+        ↩ Default access restored. Click Save Changes.
+        </span>`;
+
+}
+
+loadAccess();
+
+</script>
+
+</body>
+</html>

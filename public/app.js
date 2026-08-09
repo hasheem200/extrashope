@@ -234,12 +234,23 @@ Login
 
 /* LOGOUT */
 
-function logout(){
+function logout() {
 
-localStorage.removeItem("loggedIn");
+    // حذف حالة تسجيل الدخول القديمة
+    localStorage.removeItem("loggedIn");
 
-location.reload();
+    // حذف بيانات المستخدم
+    localStorage.removeItem("user");
 
+    // حذف أي Token مستخدم
+    localStorage.removeItem("token");
+    localStorage.removeItem("authToken");
+
+    // تنظيف Page Access redirect marker
+    sessionStorage.removeItem("__pageAccessRedirect");
+
+    // العودة للصفحة الرئيسية كـ Visitor
+    window.location.replace("/index.html");
 }
 
 /* DARK MODE */
@@ -273,51 +284,57 @@ let currentSlide = 0;
 const slides =
 document.querySelectorAll(".slide");
 
-function showSlide(index){
+function showSlide(index) {
+    if (!slides || slides.length === 0) {
+        return;
+    }
 
-slides.forEach(slide => {
+    if (index < 0 || index >= slides.length) {
+        return;
+    }
 
-slide.classList.remove("active");
+    slides.forEach(slide => {
+        slide.classList.remove("active");
+    });
 
-});
-
-slides[index].classList.add("active");
-
+    slides[index].classList.add("active");
 }
 
-function nextSlide(){
+function nextSlide() {
+    if (!slides || slides.length === 0) {
+        return;
+    }
 
-currentSlide++;
+    currentSlide++;
 
-if(currentSlide >= slides.length){
+    if (currentSlide >= slides.length) {
+        currentSlide = 0;
+    }
 
-currentSlide = 0;
-
+    showSlide(currentSlide);
 }
 
-showSlide(currentSlide);
+function prevSlide() {
+    if (!slides || slides.length === 0) {
+        return;
+    }
 
+    currentSlide--;
+
+    if (currentSlide < 0) {
+        currentSlide = slides.length - 1;
+    }
+
+    showSlide(currentSlide);
 }
 
-function prevSlide(){
+if (slides.length > 0) {
+    showSlide(0);
 
-currentSlide--;
-
-if(currentSlide < 0){
-
-currentSlide = slides.length - 1;
-
+    setInterval(() => {
+        nextSlide();
+    }, 4000);
 }
-
-showSlide(currentSlide);
-
-}
-
-setInterval(() => {
-
-nextSlide();
-
-}, 4000);
 
 
 
