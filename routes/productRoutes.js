@@ -8,6 +8,38 @@ require("../models/Product");
 const { verifyToken, optionalAuth, requireRole } = require("../middleware/auth");
 
 /*
+  GOOGLE PLAY COMPLIANCE: the Android app is not allowed to expose
+  the "18+" category (Google Play policy forbids adult content).
+  The web storefront filters this category client-side only, which
+  means the raw API response — including 18+ product data and
+  thumbnails — reaches every client before any filtering happens.
+  This flag lets us strip that category server-side, before the
+  response ever reaches the Android app, without touching the
+  website's own behavior at all.
+
+  The Android app identifies itself by appending "ExtraStoreAndroidApp"
+  to its User-Agent (see MainActivity.kt). Anyone can spoof a User-Agent,
+  so this is not a security boundary — it's a policy-compliance filter
+  for a client we control. Real access control for paid/sensitive data
+  is handled separately by sanitizeProduct() below.
+*/
+const ADULT_CATEGORY = "18+";
+
+function isAndroidApp(req) {
+    const ua = req.headers["user-agent"] || "";
+    return ua.includes("ExtraStoreAndroidApp");
+}
+
+function isAdultCategory(category) {
+    return (category || "").trim().toLowerCase() === ADULT_CATEGORY.toLowerCase();
+}
+
+function filterAdultForAndroid(products, req) {
+    if (!isAndroidApp(req)) return products;
+    return products.filter(p => !isAdultCategory(p.category));
+}
+
+/*
   SECURITY: Product documents store the actual delivery credentials
   for digital goods (login/password/stockData). The old code
   returned those fields to EVERYONE browsing the store — meaning
@@ -59,7 +91,9 @@ const products =
 await Product.find()
 .sort({ _id:-1 });
 
-res.json(products.map(p => sanitizeProduct(p, req.user)));
+const visible = filterAdultForAndroid(products, req);
+
+res.json(visible.map(p => sanitizeProduct(p, req.user)));
 
 }catch(err){
 
@@ -81,6 +115,16 @@ const product =
 await Product.findById(req.params.id);
 
 if(!product){
+
+return res.status(404).json({
+message:"Product Not Found"
+});
+
+}
+
+// Google Play compliance: hide adult-category product even if
+// accessed by direct link/id from the Android app.
+if (isAndroidApp(req) && isAdultCategory(product.category)) {
 
 return res.status(404).json({
 message:"Product Not Found"
@@ -310,7 +354,9 @@ $gt:new Date()
 promotionEnd:-1
 });
 
-res.json(products.map(p => sanitizeProduct(p, req.user)));
+const visible = filterAdultForAndroid(products, req);
+
+res.json(visible.map(p => sanitizeProduct(p, req.user)));
 
 }catch(err){
 
