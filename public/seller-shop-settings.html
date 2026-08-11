@@ -12,11 +12,16 @@ content="width=device-width, initial-scale=1.0">
 
 <title>Loading...</title>
 
+<!-- رابط الـ Favicon الافتراضي -->
 <link id="faviconLink" rel="icon" href="/favicon.ico">
 
 <script>
+// ============================================
+// تطبيق إعدادات الموقع (Favicon + Site Name)
+// ============================================
 async function applySiteSettings() {
     try {
+        // 1. جلب إعدادات الموقع
         const settingsRes = await fetch("/api/settings");
         const settingsData = await settingsRes.json();
         const s = settingsData.siteSettings || {};
@@ -31,6 +36,7 @@ async function applySiteSettings() {
             url: (s.siteUrl || window.location.origin) + window.location.pathname
         });
 
+        // 2. تحديث الـ Favicon
         if (favicon) {
             const faviconLink = document.getElementById('faviconLink');
             if (faviconLink) {
@@ -44,35 +50,35 @@ async function applySiteSettings() {
             }
         }
 
+        // 3. تحديث عنوان الصفحة (Title)
+        // احتفظ بالنص الحالي في الصفحة وأضف اسم الموقع
         const currentTitle = document.title;
+        
+        // إذا كان العنوان الحالي هو "Loading..." أو فارغاً
         if (currentTitle === "Loading..." || currentTitle === "") {
             document.title = siteName;
         } else {
+            // إذا كان العنوان يحتوي بالفعل على اسم الموقع، لا نكرره
             if (!currentTitle.includes(siteName)) {
                 document.title = `${currentTitle} - ${siteName}`;
             }
         }
 
-        const logoEl = document.querySelector('.logo');
-        if (logoEl) {
-            if (siteIcon.startsWith('http') || siteIcon.startsWith('/')) {
-                logoEl.innerHTML = `<img loading="lazy" src="${siteIcon}" style="height:24px;width:24px;vertical-align:middle;margin-right:8px;"> ${siteName}`;
-            } else {
-                logoEl.innerHTML = `${siteIcon} ${siteName}`;
-            }
-        }
+       
 
         console.log(`✅ Title: ${document.title}`);
         console.log(`✅ Favicon: ${favicon || 'default'}`);
 
     } catch (error) {
         console.error('❌ Failed to apply settings:', error);
+        // في حال الخطأ، استخدم اسم الموقع الافتراضي
         if (document.title === "Loading..." || document.title === "") {
             document.title = "My Site";
         }
     }
 }
 
+// تنفيذ عند تحميل الصفحة
 document.addEventListener('DOMContentLoaded', applySiteSettings);
 </script>
 
@@ -247,7 +253,47 @@ href="style2.css">
             flex-direction:column;
         }
     }
+
+    /* ============================================ */
+    /* إجبار رسالة الـ toast تظهر فوق بدل تحت */
+    /* ============================================ */
+    .toast,
+    #toast,
+    .toastify,
+    [class*="toast"]{
+        top:20px !important;
+        bottom:auto !important;
+    }
 </style>
+
+<script>
+// يراقب ظهور أي عنصر toast جديد على الصفحة وينقله لفوق
+// (احتياطي لو الـ CSS وحده مش كافي بسبب inline styles)
+(function(){
+    const forceTop = (el) => {
+        if(!el || !el.style) return;
+        el.style.top = "20px";
+        el.style.bottom = "auto";
+    };
+
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((m) => {
+            m.addedNodes.forEach((node) => {
+                if(node.nodeType !== 1) return;
+                const cls = (node.className || "").toString().toLowerCase();
+                if(cls.includes("toast")){
+                    forceTop(node);
+                }
+                if(node.querySelectorAll){
+                    node.querySelectorAll('[class*="toast"]').forEach(forceTop);
+                }
+            });
+        });
+    });
+
+    observer.observe(document.body, { childList:true, subtree:true });
+})();
+</script>
 
 </head>
 
@@ -261,15 +307,9 @@ href="style2.css">
 
 <nav>
 
-<a href="/">🌍 View Store</a>
-<a href="/">📲 Telegram Notifications</a>
-<a href="/">⚙ Shop Settings</a>
-<a href="/">✔ Verification</a>
-<a href="/">📢 Promotions</a>
-<a href="/">⭐ Reviews</a>
-<a href="/">💬 Order Chats</a>
-<a href="seller-products">My Orders</a>
-<a href="seller-dashboard">Dashboard</a>
+<a href="seller-dashboard" class="back">
+⬅ Back 
+</a>
 
 </nav>
 
@@ -347,6 +387,53 @@ window.open(
 user.nickname,
 "_blank"
 );
+
+}
+
+/* ============================================ */
+/* دالة toast مخصصة تظهر أعلى الصفحة دايمًا */
+/* (بتحل محل أي toast() جاية من ui-helpers.js) */
+/* ============================================ */
+function toast(message){
+
+if(!message) return;
+
+let box = document.getElementById("customToastBox");
+
+if(!box){
+
+box = document.createElement("div");
+box.id = "customToastBox";
+
+box.style.position = "fixed";
+box.style.top = "20px";
+box.style.left = "50%";
+box.style.transform = "translateX(-50%)";
+box.style.zIndex = "999999";
+box.style.background = "#1c1c1c";
+box.style.color = "#fff";
+box.style.padding = "12px 24px";
+box.style.borderRadius = "8px";
+box.style.fontSize = "14px";
+box.style.boxShadow = "0 4px 14px rgba(0,0,0,.25)";
+box.style.maxWidth = "90%";
+box.style.textAlign = "center";
+box.style.transition = "opacity .3s, top .3s";
+box.style.opacity = "0";
+
+document.body.appendChild(box);
+
+}
+
+box.textContent = message;
+box.style.top = "20px";
+box.style.opacity = "1";
+
+clearTimeout(box._hideTimer);
+
+box._hideTimer = setTimeout(() => {
+box.style.opacity = "0";
+}, 3000);
 
 }
 
