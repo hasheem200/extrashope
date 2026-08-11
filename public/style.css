@@ -1832,43 +1832,11 @@ background:#1f2937;
     background:#222;
 }
 
-.main-content{
-    margin-left:240px;
-    padding:20px;
-}
-
-.seller-sidebar{
-    width:240px;
-    background:#111827;
-    min-height:100vh;
-    padding:20px;
-    position:fixed;
-    left:0;
-    top:0;
-}
-
-.seller-sidebar h3{
-    color:white;
-    margin-bottom:20px;
-}
-
-.seller-sidebar a{
-    display:block;
-    color:white;
-    text-decoration:none;
-    padding:12px;
-    margin-bottom:8px;
-    border-radius:8px;
-    background:#1f2937;
-}
-
-.seller-sidebar a:hover{
-    background:#374151;
-}
-
-.main-content{
-    margin-left:260px;
-    padding:20px;
+.main-content {
+    width: 100%;
+    margin-left: 0;
+    padding: 20px;
+    box-sizing: border-box;
 }
 
 
