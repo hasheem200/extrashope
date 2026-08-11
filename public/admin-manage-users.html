@@ -62,15 +62,7 @@ async function applySiteSettings() {
             }
         }
 
-        // 4. تحديث اسم الموقع في الهيدر (اختياري)
-        const logoEl = document.querySelector('.logo');
-        if (logoEl) {
-            if (siteIcon.startsWith('http') || siteIcon.startsWith('/')) {
-                logoEl.innerHTML = `<img loading="lazy" src="${siteIcon}" style="height:24px;width:24px;vertical-align:middle;margin-right:8px;" onerror="this.style.display='none';"> ${siteName}`;
-            } else {
-                logoEl.innerHTML = `${siteIcon} ${siteName}`;
-            }
-        }
+       
 
         console.log(`✅ Title: ${document.title}`);
         console.log(`✅ Favicon: ${favicon || 'default'}`);
