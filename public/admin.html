@@ -95,6 +95,82 @@ href="style.css">
 <script src="js/page-access.js"></script>
 <script src="js/ui-helpers.js"></script>
 <script src="js/seo.js"></script>
+
+<!-- ============================================ -->
+<!-- تنسيق موبايل لضمان ظهور العناصر بالطول وليس بالعرض -->
+<!-- ============================================ -->
+<style>
+    @media (max-width: 768px){
+
+        body{
+            overflow-x:hidden;
+        }
+
+        header{
+            flex-direction:column;
+            align-items:flex-start;
+            padding:12px 15px;
+        }
+
+        header nav{
+            display:flex;
+            flex-direction:column;
+            width:100%;
+            gap:8px;
+            margin-top:10px;
+        }
+
+        header nav a,
+        header nav button{
+            width:100%;
+            box-sizing:border-box;
+            text-align:center;
+            padding:10px;
+        }
+
+        .dashboard-layout{
+            display:block;
+            width:100%;
+        }
+
+        .dashboard-main{
+            width:100%;
+            box-sizing:border-box;
+            padding:0 15px;
+        }
+
+        .stats{
+            display:grid !important;
+            grid-template-columns:1fr !important;
+            width:100%;
+            gap:15px;
+        }
+
+        .stat-box,
+        .card{
+            width:100% !important;
+            box-sizing:border-box;
+            max-width:100%;
+        }
+
+        .admin-product{
+            width:100%;
+            box-sizing:border-box;
+            flex-wrap:wrap;
+        }
+
+        .admin-product img{
+            max-width:100%;
+            height:auto;
+        }
+
+        table{
+            display:block;
+            overflow-x:auto;
+            white-space:nowrap;
+        }
+    }
+</style>
 </head>
 
 <body>
@@ -108,8 +184,13 @@ href="style.css">
 <nav>
 
 <a href="/">Home</a>
+
 <a href="admin-support">💬 Support Center</a>
-<a href="add-product">➕ Add Product</a>
+<a href="admin-Products-Manager">Products Manager</a>
+<a href="add-product">Add Product</a>
+<a href="admin-orders">Pending Orders</a>
+<a href="admin-payment">payment</a>
+<a href="admin">Admin Panel</a>
 <a href="admin-manage-users">👥 Manage Users</a>
 <a href="admin-withdraws">💸 Withdraw</a>
 <button onclick="logout()" class="logout-btn">
