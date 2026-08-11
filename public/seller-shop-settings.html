@@ -382,7 +382,7 @@ body:formData
 }catch(networkErr){
 
 console.error(`❌ ${label} upload network error:`, networkErr);
-toast(`❌ فشل الاتصال أثناء رفع ${label}`);
+toast(`❌ Connection failed while uploading ${label}`);
 return null;
 
 }
@@ -391,7 +391,7 @@ if(!upload.ok){
 
 const errText = await upload.text().catch(()=> "");
 console.error(`❌ ${label} upload failed:`, upload.status, errText);
-toast(`❌ فشل رفع ${label} (كود ${upload.status})`);
+toast(`❌ Failed to upload ${label} (code ${upload.status})`);
 return null;
 
 }
@@ -402,7 +402,7 @@ await upload.json().catch(()=>null);
 if(!result || !result.image){
 
 console.error(`❌ ${label} upload: unexpected response`, result);
-toast(`❌ استجابة غير متوقعة عند رفع ${label}`);
+toast(`❌ Unexpected response while uploading ${label}`);
 return null;
 
 }
@@ -506,7 +506,7 @@ bannerUrl
 }catch(networkErr){
 
 console.error("❌ Save settings network error:", networkErr);
-toast("❌ فشل الاتصال بالسيرفر");
+toast("❌ Connection failed");
 return;
 
 }
@@ -515,7 +515,7 @@ if(!res.ok){
 
 const errText = await res.text().catch(()=> "");
 console.error("❌ Save settings failed:", res.status, errText);
-toast(`❌ فشل حفظ الإعدادات (كود ${res.status})`);
+toast(`❌ Failed to save settings (code ${res.status})`);
 return;
 
 }
@@ -523,7 +523,7 @@ return;
 const data =
 await res.json().catch(()=>null);
 
-toast("✅ تم التغيير بنجاح");
+toast("✅ Changes saved successfully");
 
 }
 
