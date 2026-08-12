@@ -585,6 +585,49 @@ border:1px solid #555;
 body.dark a{
 color:orange;
 }
+
+/* استثناء أزرار Cart وLogin من قاعدة الروابط العامة أعلاه          */
+/* عشان متبقاش نص برتقالي فوق خلفية برتقالي (مختفي) في الوضع الليلي */
+
+body.dark .top-cart a{
+color:white;
+background:orange;
+}
+
+body.dark .top-cart a:hover{
+background:white;
+color:black;
+}
+
+body.dark .login-btn{
+color:black;
+background:orange;
+}
+
+body.dark .login-btn:hover{
+background:white;
+color:black;
+}
+
+body.dark .checkout-link{
+color:black;
+background:orange;
+}
+
+body.dark .checkout-link:hover{
+background:white;
+color:black;
+}
+
+body.dark .heroBtn{
+color:#fff;
+background:#ff9800;
+}
+
+body.dark .heroBtn:hover{
+background:#ff6f00;
+color:#fff;
+}
 /* SLIDER */
 
 .slider{
@@ -1673,16 +1716,6 @@ max-width:500px;
 
 button{
 
-/* NOTE: this file used to define a global "button" rule twice
-   (once here, once further down near the product-card section).
-   CSS cascade rules meant the second one silently overrode part
-   of this one (padding, font-size) and added width:100% plus
-   margin-top with no visibility that it was happening — a
-   classic hidden conflict. Merged into a single definition below
-   with the exact same effective values the page was already
-   rendering, so nothing visually changes; there's just one
-   source of truth now instead of two fighting each other. */
-
 width:100%;
 
 padding:14px;
@@ -1839,8 +1872,6 @@ background:#1f2937;
     box-sizing: border-box;
 }
 
-
-
 .form-group{
 margin-bottom:20px;
 }
@@ -1990,10 +2021,6 @@ overflow-x:hidden;
 
 }
 
-/* HEADER */
-
-@media screen and (max-width:768px){
-
 header{
 
 display:flex;
@@ -2023,8 +2050,6 @@ margin-top:15px;
 .logo{
 
 font-size:26px;
-
-}
 
 }
 
@@ -2080,8 +2105,6 @@ font-size:22px;
 font-size:16px;
 
 }
-
-/* BUTTONS — merged into the single definition above */
 
 /* PRODUCT CARD */
 
@@ -2167,10 +2190,6 @@ justify-content:center;
 gap:8px;
 
 }
-
-/* SIDEBAR */
-
-
 
 /* PROMOTED */
 
@@ -2319,19 +2338,6 @@ margin-bottom:15px;
 }
 
 }
-
-/* Seller Products */
-
-
-
-
-
-
-
-
-
-
-
 
 /* ===========================
    HERO PROMOTION
@@ -2654,10 +2660,6 @@ display:block;
 
 /* ==========================================================
    TOAST NOTIFICATIONS + LOADING SPINNER
-   Reuses colors already used elsewhere in this file:
-   #00c853 (existing button/brand green) for success,
-   red (already used for badges/danger elsewhere) for errors,
-   #222 (existing header dark) for neutral/info.
 ========================================================== */
 
 #toast-container{
